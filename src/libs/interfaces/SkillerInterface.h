@@ -3,7 +3,7 @@
  *  SkillerInterface.h - Fawkes BlackBoard Interface - SkillerInterface
  *
  *  Templated created:   Thu Oct 12 10:49:19 2006
- *  Copyright  2008  Tim Niemueller
+ *  Copyright  2008-2010  Tim Niemueller
  *
  ****************************************************************************/
 
@@ -56,23 +56,33 @@ class SkillerInterface : public Interface
     int64_t timestamp_sec;  /**< Interface Unix timestamp, seconds */
     int64_t timestamp_usec; /**< Interface Unix timestamp, micro-seconds */
     char skill_string[1024]; /**< 
-      Currently executed skill string, at least the first 1023 bytes of it.
-      Must be properly null-terminated.
+      Combined string showing as much as possible of the currently
+      executed skills string, at most the first 1023 bytes of it.
+      Must be properly null-terminated. Shall be of the following
+      format: S skill1(param) || S skill2() [||...]  where S is one of
+      F, R, X (marking the skill state, where X is failure) and
+      skill1(param) etc. are the skills of the respective
+      sandboxes. || is used to separate the strings (representing
+      concurrent execution). Inactive channels shall be omitted.
      */
     char error[128]; /**< 
       String describing the error. Can be set by a skill when it fails.
+      Shall be of the form: N string | N string...
+      where N denotes the skill channel and string the respective
+      error string. Active channels which did not post an error
+      message shall be omitted.
      */
     uint32_t exclusive_controller; /**< 
       Instance serial of the exclusive controller of the skiller. If this does not
       carry your instance serial your exec messages will be ignored. Aquire control with
       the AquireControlMessage. Make sure you release control before exiting.
      */
-    uint32_t msgid; /**< 
-      The ID of the message that is currently being processed,
+    uint32_t msgid[16]; /**< 
+      The IDs of the messages that are currently being processed,
       or 0 if no message is being processed.
      */
-    int32_t status; /**< 
-      The status of the current skill execution.
+    int32_t status[16]; /**< 
+      The status of the current skill execution for the appropriate channel.
      */
   } SkillerInterface_data_t;
 #pragma pack(pop)
@@ -91,8 +101,14 @@ class SkillerInterface : public Interface
       int64_t timestamp_sec;  /**< Interface Unix timestamp, seconds */
       int64_t timestamp_usec; /**< Interface Unix timestamp, micro-seconds */
       char skill_string[1024]; /**< 
-      Currently executed skill string, at least the first 1023 bytes of it.
-      Must be properly null-terminated.
+      Combined string showing as much as possible of the currently
+      executed skills string, at most the first 1023 bytes of it.
+      Must be properly null-terminated. Shall be of the following
+      format: S skill1(param) || S skill2() [||...]  where S is one of
+      F, R, X (marking the skill state, where X is failure) and
+      skill1(param) etc. are the skills of the respective
+      sandboxes. || is used to separate the strings (representing
+      concurrent execution). Inactive channels shall be omitted.
      */
     } ExecSkillMessage_data_t;
 #pragma pack(pop)
@@ -144,6 +160,7 @@ class SkillerInterface : public Interface
     typedef struct {
       int64_t timestamp_sec;  /**< Interface Unix timestamp, seconds */
       int64_t timestamp_usec; /**< Interface Unix timestamp, micro-seconds */
+      uint32_t channel; /**< Which channel to stop. */
     } StopExecMessage_data_t;
 #pragma pack(pop)
 
@@ -151,10 +168,37 @@ class SkillerInterface : public Interface
 
   interface_enum_map_t enum_map_SkillStatusEnum;
    public:
+    StopExecMessage(const uint32_t ini_channel);
     StopExecMessage();
     ~StopExecMessage();
 
     StopExecMessage(const StopExecMessage *m);
+    /* Methods */
+    uint32_t channel() const;
+    void set_channel(const uint32_t new_channel);
+    size_t maxlenof_channel() const;
+    virtual Message * clone() const;
+  };
+
+  class StopAllMessage : public Message
+  {
+   private:
+#pragma pack(push,4)
+    /** Internal data storage, do NOT modify! */
+    typedef struct {
+      int64_t timestamp_sec;  /**< Interface Unix timestamp, seconds */
+      int64_t timestamp_usec; /**< Interface Unix timestamp, micro-seconds */
+    } StopAllMessage_data_t;
+#pragma pack(pop)
+
+    StopAllMessage_data_t *data;
+
+  interface_enum_map_t enum_map_SkillStatusEnum;
+   public:
+    StopAllMessage();
+    ~StopAllMessage();
+
+    StopAllMessage(const StopAllMessage *m);
     /* Methods */
     virtual Message * clone() const;
   };
@@ -231,11 +275,15 @@ class SkillerInterface : public Interface
   uint32_t exclusive_controller() const;
   void set_exclusive_controller(const uint32_t new_exclusive_controller);
   size_t maxlenof_exclusive_controller() const;
-  uint32_t msgid() const;
-  void set_msgid(const uint32_t new_msgid);
+  uint32_t * msgid() const;
+  uint32_t msgid(unsigned int index) const;
+  void set_msgid(unsigned int index, const uint32_t new_msgid);
+  void set_msgid(const uint32_t * new_msgid);
   size_t maxlenof_msgid() const;
-  SkillStatusEnum status() const;
-  void set_status(const SkillStatusEnum new_status);
+  SkillStatusEnum * status() const;
+  SkillStatusEnum status(unsigned int index) const;
+  void set_status(unsigned int index, const SkillStatusEnum new_status);
+  void set_status(const SkillStatusEnum * new_status);
   size_t maxlenof_status() const;
   virtual Message * create_message(const char *type) const;
 

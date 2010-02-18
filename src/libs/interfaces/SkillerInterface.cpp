@@ -3,7 +3,7 @@
  *  SkillerInterface.cpp - Fawkes BlackBoard Interface - SkillerInterface
  *
  *  Templated created:   Thu Oct 12 10:49:19 2006
- *  Copyright  2008  Tim Niemueller
+ *  Copyright  2008-2010  Tim Niemueller
  *
  ****************************************************************************/
 
@@ -60,14 +60,15 @@ SkillerInterface::SkillerInterface() : Interface()
   add_fieldinfo(IFT_STRING, "skill_string", 1024, data->skill_string);
   add_fieldinfo(IFT_STRING, "error", 128, data->error);
   add_fieldinfo(IFT_UINT32, "exclusive_controller", 1, &data->exclusive_controller);
-  add_fieldinfo(IFT_UINT32, "msgid", 1, &data->msgid);
-  add_fieldinfo(IFT_ENUM, "status", 1, &data->status, "SkillStatusEnum", &enum_map_SkillStatusEnum);
+  add_fieldinfo(IFT_UINT32, "msgid", 16, &data->msgid);
+  add_fieldinfo(IFT_ENUM, "status", 16, &data->status, "SkillStatusEnum", &enum_map_SkillStatusEnum);
   add_messageinfo("ExecSkillMessage");
   add_messageinfo("RestartInterpreterMessage");
   add_messageinfo("StopExecMessage");
+  add_messageinfo("StopAllMessage");
   add_messageinfo("AcquireControlMessage");
   add_messageinfo("ReleaseControlMessage");
-  unsigned char tmp_hash[] = {0x99, 0x14, 0xe6, 0x2b, 0x7f, 0x3b, 0x80, 0xb, 0xbd, 0x35, 0x10, 0xc0, 0x7e, 0xb5, 0xdc, 0x55};
+  unsigned char tmp_hash[] = {0x46, 0xf7, 0x4a, 0x52, 0xde, 0xe8, 0x91, 0x14, 0x4e, 0x1, 0x5e, 0xa0, 0x16, 0x6d, 0xe6, 0xee};
   set_hash(tmp_hash);
 }
 
@@ -94,8 +95,14 @@ SkillerInterface::tostring_SkillStatusEnum(SkillStatusEnum value) const
 /* Methods */
 /** Get skill_string value.
  * 
-      Currently executed skill string, at least the first 1023 bytes of it.
-      Must be properly null-terminated.
+      Combined string showing as much as possible of the currently
+      executed skills string, at most the first 1023 bytes of it.
+      Must be properly null-terminated. Shall be of the following
+      format: S skill1(param) || S skill2() [||...]  where S is one of
+      F, R, X (marking the skill state, where X is failure) and
+      skill1(param) etc. are the skills of the respective
+      sandboxes. || is used to separate the strings (representing
+      concurrent execution). Inactive channels shall be omitted.
     
  * @return skill_string value
  */
@@ -117,8 +124,14 @@ SkillerInterface::maxlenof_skill_string() const
 
 /** Set skill_string value.
  * 
-      Currently executed skill string, at least the first 1023 bytes of it.
-      Must be properly null-terminated.
+      Combined string showing as much as possible of the currently
+      executed skills string, at most the first 1023 bytes of it.
+      Must be properly null-terminated. Shall be of the following
+      format: S skill1(param) || S skill2() [||...]  where S is one of
+      F, R, X (marking the skill state, where X is failure) and
+      skill1(param) etc. are the skills of the respective
+      sandboxes. || is used to separate the strings (representing
+      concurrent execution). Inactive channels shall be omitted.
     
  * @param new_skill_string new skill_string value
  */
@@ -132,6 +145,10 @@ SkillerInterface::set_skill_string(const char * new_skill_string)
 /** Get error value.
  * 
       String describing the error. Can be set by a skill when it fails.
+      Shall be of the form: N string | N string...
+      where N denotes the skill channel and string the respective
+      error string. Active channels which did not post an error
+      message shall be omitted.
     
  * @return error value
  */
@@ -154,6 +171,10 @@ SkillerInterface::maxlenof_error() const
 /** Set error value.
  * 
       String describing the error. Can be set by a skill when it fails.
+      Shall be of the form: N string | N string...
+      where N denotes the skill channel and string the respective
+      error string. Active channels which did not post an error
+      message shall be omitted.
     
  * @param new_error new error value
  */
@@ -205,15 +226,33 @@ SkillerInterface::set_exclusive_controller(const uint32_t new_exclusive_controll
 
 /** Get msgid value.
  * 
-      The ID of the message that is currently being processed,
+      The IDs of the messages that are currently being processed,
       or 0 if no message is being processed.
     
  * @return msgid value
  */
-uint32_t
+uint32_t *
 SkillerInterface::msgid() const
 {
   return data->msgid;
+}
+
+/** Get msgid value at given index.
+ * 
+      The IDs of the messages that are currently being processed,
+      or 0 if no message is being processed.
+    
+ * @param index index of value
+ * @return msgid value
+ * @exception Exception thrown if index is out of bounds
+ */
+uint32_t
+SkillerInterface::msgid(unsigned int index) const
+{
+  if (index > 16) {
+    throw Exception("Index value %u out of bounds (0..16)", index);
+  }
+  return data->msgid[index];
 }
 
 /** Get maximum length of msgid value.
@@ -223,33 +262,67 @@ SkillerInterface::msgid() const
 size_t
 SkillerInterface::maxlenof_msgid() const
 {
-  return 1;
+  return 16;
 }
 
 /** Set msgid value.
  * 
-      The ID of the message that is currently being processed,
+      The IDs of the messages that are currently being processed,
       or 0 if no message is being processed.
     
  * @param new_msgid new msgid value
  */
 void
-SkillerInterface::set_msgid(const uint32_t new_msgid)
+SkillerInterface::set_msgid(const uint32_t * new_msgid)
 {
-  data->msgid = new_msgid;
+  memcpy(data->msgid, new_msgid, sizeof(uint32_t) * 16);
   data_changed = true;
 }
 
+/** Set msgid value at given index.
+ * 
+      The IDs of the messages that are currently being processed,
+      or 0 if no message is being processed.
+    
+ * @param new_msgid new msgid value
+ * @param index index for of the value
+ */
+void
+SkillerInterface::set_msgid(unsigned int index, const uint32_t new_msgid)
+{
+  if (index > 16) {
+    throw Exception("Index value %u out of bounds (0..16)", index);
+  }
+  data->msgid[index] = new_msgid;
+  data_changed = true;
+}
 /** Get status value.
  * 
-      The status of the current skill execution.
+      The status of the current skill execution for the appropriate channel.
     
  * @return status value
  */
-SkillerInterface::SkillStatusEnum
+SkillerInterface::SkillStatusEnum *
 SkillerInterface::status() const
 {
-  return (SkillerInterface::SkillStatusEnum)data->status;
+  return (SkillerInterface::SkillStatusEnum *)data->status;
+}
+
+/** Get status value at given index.
+ * 
+      The status of the current skill execution for the appropriate channel.
+    
+ * @param index index of value
+ * @return status value
+ * @exception Exception thrown if index is out of bounds
+ */
+SkillerInterface::SkillStatusEnum
+SkillerInterface::status(unsigned int index) const
+{
+  if (index > 16) {
+    throw Exception("Index value %u out of bounds (0..16)", index);
+  }
+  return (SkillerInterface::SkillStatusEnum)data->status[index];
 }
 
 /** Get maximum length of status value.
@@ -259,22 +332,38 @@ SkillerInterface::status() const
 size_t
 SkillerInterface::maxlenof_status() const
 {
-  return 1;
+  return 16;
 }
 
 /** Set status value.
  * 
-      The status of the current skill execution.
+      The status of the current skill execution for the appropriate channel.
     
  * @param new_status new status value
  */
 void
-SkillerInterface::set_status(const SkillStatusEnum new_status)
+SkillerInterface::set_status(const SkillStatusEnum * new_status)
 {
-  data->status = new_status;
+  memcpy(data->status, new_status, sizeof(SkillStatusEnum) * 16);
   data_changed = true;
 }
 
+/** Set status value at given index.
+ * 
+      The status of the current skill execution for the appropriate channel.
+    
+ * @param new_status new status value
+ * @param index index for of the value
+ */
+void
+SkillerInterface::set_status(unsigned int index, const SkillStatusEnum new_status)
+{
+  if (index > 16) {
+    throw Exception("Index value %u out of bounds (0..16)", index);
+  }
+  data->status[index] = new_status;
+  data_changed = true;
+}
 /* =========== message create =========== */
 Message *
 SkillerInterface::create_message(const char *type) const
@@ -285,6 +374,8 @@ SkillerInterface::create_message(const char *type) const
     return new RestartInterpreterMessage();
   } else if ( strncmp("StopExecMessage", type, __INTERFACE_MESSAGE_TYPE_SIZE) == 0 ) {
     return new StopExecMessage();
+  } else if ( strncmp("StopAllMessage", type, __INTERFACE_MESSAGE_TYPE_SIZE) == 0 ) {
+    return new StopAllMessage();
   } else if ( strncmp("AcquireControlMessage", type, __INTERFACE_MESSAGE_TYPE_SIZE) == 0 ) {
     return new AcquireControlMessage();
   } else if ( strncmp("ReleaseControlMessage", type, __INTERFACE_MESSAGE_TYPE_SIZE) == 0 ) {
@@ -380,8 +471,14 @@ SkillerInterface::ExecSkillMessage::ExecSkillMessage(const ExecSkillMessage *m) 
 /* Methods */
 /** Get skill_string value.
  * 
-      Currently executed skill string, at least the first 1023 bytes of it.
-      Must be properly null-terminated.
+      Combined string showing as much as possible of the currently
+      executed skills string, at most the first 1023 bytes of it.
+      Must be properly null-terminated. Shall be of the following
+      format: S skill1(param) || S skill2() [||...]  where S is one of
+      F, R, X (marking the skill state, where X is failure) and
+      skill1(param) etc. are the skills of the respective
+      sandboxes. || is used to separate the strings (representing
+      concurrent execution). Inactive channels shall be omitted.
     
  * @return skill_string value
  */
@@ -403,8 +500,14 @@ SkillerInterface::ExecSkillMessage::maxlenof_skill_string() const
 
 /** Set skill_string value.
  * 
-      Currently executed skill string, at least the first 1023 bytes of it.
-      Must be properly null-terminated.
+      Combined string showing as much as possible of the currently
+      executed skills string, at most the first 1023 bytes of it.
+      Must be properly null-terminated. Shall be of the following
+      format: S skill1(param) || S skill2() [||...]  where S is one of
+      F, R, X (marking the skill state, where X is failure) and
+      skill1(param) etc. are the skills of the respective
+      sandboxes. || is used to separate the strings (representing
+      concurrent execution). Inactive channels shall be omitted.
     
  * @param new_skill_string new skill_string value
  */
@@ -481,6 +584,23 @@ SkillerInterface::RestartInterpreterMessage::clone() const
  */
 
 
+/** Constructor with initial values.
+ * @param ini_channel initial value for channel
+ */
+SkillerInterface::StopExecMessage::StopExecMessage(const uint32_t ini_channel) : Message("StopExecMessage")
+{
+  data_size = sizeof(StopExecMessage_data_t);
+  data_ptr  = malloc(data_size);
+  memset(data_ptr, 0, data_size);
+  data      = (StopExecMessage_data_t *)data_ptr;
+  data_ts   = (message_data_ts_t *)data_ptr;
+  data->channel = ini_channel;
+  enum_map_SkillStatusEnum[(int)S_INACTIVE] = "S_INACTIVE";
+  enum_map_SkillStatusEnum[(int)S_FINAL] = "S_FINAL";
+  enum_map_SkillStatusEnum[(int)S_RUNNING] = "S_RUNNING";
+  enum_map_SkillStatusEnum[(int)S_FAILED] = "S_FAILED";
+  add_fieldinfo(IFT_UINT32, "channel", 1, &data->channel);
+}
 /** Constructor */
 SkillerInterface::StopExecMessage::StopExecMessage() : Message("StopExecMessage")
 {
@@ -493,6 +613,7 @@ SkillerInterface::StopExecMessage::StopExecMessage() : Message("StopExecMessage"
   enum_map_SkillStatusEnum[(int)S_FINAL] = "S_FINAL";
   enum_map_SkillStatusEnum[(int)S_RUNNING] = "S_RUNNING";
   enum_map_SkillStatusEnum[(int)S_FAILED] = "S_FAILED";
+  add_fieldinfo(IFT_UINT32, "channel", 1, &data->channel);
 }
 
 /** Destructor */
@@ -514,6 +635,36 @@ SkillerInterface::StopExecMessage::StopExecMessage(const StopExecMessage *m) : M
 }
 
 /* Methods */
+/** Get channel value.
+ * Which channel to stop.
+ * @return channel value
+ */
+uint32_t
+SkillerInterface::StopExecMessage::channel() const
+{
+  return data->channel;
+}
+
+/** Get maximum length of channel value.
+ * @return length of channel value, can be length of the array or number of 
+ * maximum number of characters for a string
+ */
+size_t
+SkillerInterface::StopExecMessage::maxlenof_channel() const
+{
+  return 1;
+}
+
+/** Set channel value.
+ * Which channel to stop.
+ * @param new_channel new channel value
+ */
+void
+SkillerInterface::StopExecMessage::set_channel(const uint32_t new_channel)
+{
+  data->channel = new_channel;
+}
+
 /** Clone this message.
  * Produces a message of the same type as this message and copies the
  * data to the new message.
@@ -523,6 +674,56 @@ Message *
 SkillerInterface::StopExecMessage::clone() const
 {
   return new SkillerInterface::StopExecMessage(this);
+}
+/** @class SkillerInterface::StopAllMessage <interfaces/SkillerInterface.h>
+ * StopAllMessage Fawkes BlackBoard Interface Message.
+ * 
+    
+ */
+
+
+/** Constructor */
+SkillerInterface::StopAllMessage::StopAllMessage() : Message("StopAllMessage")
+{
+  data_size = sizeof(StopAllMessage_data_t);
+  data_ptr  = malloc(data_size);
+  memset(data_ptr, 0, data_size);
+  data      = (StopAllMessage_data_t *)data_ptr;
+  data_ts   = (message_data_ts_t *)data_ptr;
+  enum_map_SkillStatusEnum[(int)S_INACTIVE] = "S_INACTIVE";
+  enum_map_SkillStatusEnum[(int)S_FINAL] = "S_FINAL";
+  enum_map_SkillStatusEnum[(int)S_RUNNING] = "S_RUNNING";
+  enum_map_SkillStatusEnum[(int)S_FAILED] = "S_FAILED";
+}
+
+/** Destructor */
+SkillerInterface::StopAllMessage::~StopAllMessage()
+{
+  free(data_ptr);
+}
+
+/** Copy constructor.
+ * @param m message to copy from
+ */
+SkillerInterface::StopAllMessage::StopAllMessage(const StopAllMessage *m) : Message("StopAllMessage")
+{
+  data_size = m->data_size;
+  data_ptr  = malloc(data_size);
+  memcpy(data_ptr, m->data_ptr, data_size);
+  data      = (StopAllMessage_data_t *)data_ptr;
+  data_ts   = (message_data_ts_t *)data_ptr;
+}
+
+/* Methods */
+/** Clone this message.
+ * Produces a message of the same type as this message and copies the
+ * data to the new message.
+ * @return clone of this message
+ */
+Message *
+SkillerInterface::StopAllMessage::clone() const
+{
+  return new SkillerInterface::StopAllMessage(this);
 }
 /** @class SkillerInterface::AcquireControlMessage <interfaces/SkillerInterface.h>
  * AcquireControlMessage Fawkes BlackBoard Interface Message.
@@ -701,12 +902,16 @@ SkillerInterface::message_valid(const Message *message) const
   if ( m2 != NULL ) {
     return true;
   }
-  const AcquireControlMessage *m3 = dynamic_cast<const AcquireControlMessage *>(message);
+  const StopAllMessage *m3 = dynamic_cast<const StopAllMessage *>(message);
   if ( m3 != NULL ) {
     return true;
   }
-  const ReleaseControlMessage *m4 = dynamic_cast<const ReleaseControlMessage *>(message);
+  const AcquireControlMessage *m4 = dynamic_cast<const AcquireControlMessage *>(message);
   if ( m4 != NULL ) {
+    return true;
+  }
+  const ReleaseControlMessage *m5 = dynamic_cast<const ReleaseControlMessage *>(message);
+  if ( m5 != NULL ) {
     return true;
   }
   return false;

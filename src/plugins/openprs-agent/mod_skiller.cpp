@@ -184,7 +184,7 @@ action_skill_call(TermList terms)
       ACTION_WAIT();
     } else {
       // currently running
-      switch (skiller_if->status()) {
+      switch (skiller_if->status(0)) {
       case SkillerInterface::S_FINAL:
 	printf("Skill %s is FINAL\n", name->u.string);
 	ACTION_FINAL();

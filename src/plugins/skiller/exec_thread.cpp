@@ -182,8 +182,8 @@ SkillerExecutionThread::init()
     __lua->add_watcher(this);
   
     __skiller_if->set_skill_string("");
-    __skiller_if->set_msgid(0);
-    __skiller_if->set_status(SkillerInterface::S_INACTIVE);
+    __skiller_if->set_msgid(0, 0);
+    __skiller_if->set_status(0, SkillerInterface::S_INACTIVE);
     __skiller_if->write();
 
     __skdbg_if->set_graph("");
@@ -295,15 +295,15 @@ SkillerExecutionThread::publish_skill_status(std::string &curss, unsigned int cu
   //const char *sst = "Unknown";
   LUA_INTEGER running = 0, final = 0, failed = 0;
 
-  SkillerInterface::SkillStatusEnum old_status = __skiller_if->status();
-  SkillerInterface::SkillStatusEnum new_status = __skiller_if->status();
+  SkillerInterface::SkillStatusEnum old_status = __skiller_if->status(0);
+  SkillerInterface::SkillStatusEnum new_status = __skiller_if->status(0);
 
   try {
 
     if ( curss == "" ) {
       // nothing running, we're inactive
       //sst = "S_INACTIVE/empty";
-      __skiller_if->set_status(SkillerInterface::S_INACTIVE);
+      __skiller_if->set_status(0, SkillerInterface::S_INACTIVE);
 
     } else {                                  // Stack:
       __lua->get_global("skillenv");          // skillenv
@@ -347,9 +347,9 @@ SkillerExecutionThread::publish_skill_status(std::string &curss, unsigned int cu
       */
 
       __skiller_if->set_skill_string(curss.c_str());
-      __skiller_if->set_msgid(cur_msgid);
+      __skiller_if->set_msgid(0, cur_msgid);
 
-      __skiller_if->set_status(new_status);
+      __skiller_if->set_status(0, new_status);
 
       if ( ! __error_written && (new_status == SkillerInterface::S_FAILED) ) {
 	publish_error();
@@ -367,7 +367,7 @@ SkillerExecutionThread::publish_skill_status(std::string &curss, unsigned int cu
     logger->log_error("SkillerExecutionThread", "Failed to retrieve skill status");
     logger->log_error("SkillerExecutionThread", e);
     try {
-      __skiller_if->set_status(SkillerInterface::S_FAILED);
+      __skiller_if->set_status(0, SkillerInterface::S_FAILED);
     } catch (Exception &e2) {
       logger->log_error("SkillerExecutionThread", "Failed to set FAILED as skill "
 			"status value during error handling");
@@ -457,7 +457,7 @@ SkillerExecutionThread::loop()
 
   // Current skill string
   std::string curss = __skiller_if->skill_string();
-  unsigned int cur_msgid = __skiller_if->msgid();;
+  unsigned int cur_msgid = __skiller_if->msgid(0);
 
   unsigned int excl_ctrl   = __skiller_if->exclusive_controller();
   bool write_skiller_if    = false;
@@ -567,7 +567,7 @@ SkillerExecutionThread::loop()
       logger->log_warn("SkillerExecutionThread", e);
     }
 
-    __skiller_if->set_status(SkillerInterface::S_INACTIVE);
+    __skiller_if->set_status(0, SkillerInterface::S_INACTIVE);
     __skiller_if->set_skill_string("");
 
     //We're not resetting, because this is information someone might need...
@@ -583,7 +583,7 @@ SkillerExecutionThread::loop()
     // We've got something to execute
 
 #ifdef SKILLER_TIMETRACKING
-      __tt->ping_start(__ttc_luaprep);
+    __tt->ping_start(__ttc_luaprep);
 #endif
 
     // was continuous execution, status has to be cleaned up anyway

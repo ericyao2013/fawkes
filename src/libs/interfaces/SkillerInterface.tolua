@@ -33,8 +33,19 @@ class SkillerInterface : public Interface
 
   class StopExecMessage : public Message
   {
+    StopExecMessage(unsigned int ini_channel);
     StopExecMessage();
     ~StopExecMessage();
+
+    unsigned int channel();
+    void set_channel(const unsigned int new_channel);
+    int maxlenof_channel() const;
+  };
+
+  class StopAllMessage : public Message
+  {
+    StopAllMessage();
+    ~StopAllMessage();
 
   };
 
@@ -65,11 +76,11 @@ class SkillerInterface : public Interface
   unsigned int exclusive_controller();
   void set_exclusive_controller(const unsigned int new_exclusive_controller);
   int maxlenof_exclusive_controller() const;
-  unsigned int msgid();
-  void set_msgid(const unsigned int new_msgid);
+  unsigned int msgid(int index);
+  void set_msgid(unsigned int index, const unsigned int new_msgid);
   int maxlenof_msgid() const;
-  SkillStatusEnum status();
-  void set_status(const SkillStatusEnum new_status);
+  SkillStatusEnum status(int index);
+  void set_status(unsigned int index, const SkillStatusEnum new_status);
   int maxlenof_status() const;
   bool                    oftype(const char *interface_type) const;
   const void *            datachunk() const;
