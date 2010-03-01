@@ -54,7 +54,8 @@ require("fawkes.depinit")
 require("fawkes.mathext")
 local ifinitmod = require("fawkes.interface_initializer")
 
-skillenv = require("skiller.skillenv")
+skillenv  = require("skiller.skillenv")
+skillexec = require("skiller.exec")
 
 fawkes.depinit.add_module_initializer(ifinitmod.init_interfaces)
 
@@ -83,6 +84,7 @@ then
    end
 end
 
+skillexec.init(interfaces.writing.skiller:maxlenof_status())
 skillenv.init(SKILLSPACE)
 
 --skiller.skillhsm.SkillHSM:set_debug(true)
