@@ -77,11 +77,11 @@ class SkillerInterface : public Interface
       carry your instance serial your exec messages will be ignored. Aquire control with
       the AquireControlMessage. Make sure you release control before exiting.
      */
-    uint32_t msgid[16]; /**< 
+    uint32_t msgid[8]; /**< 
       The IDs of the messages that are currently being processed,
       or 0 if no message is being processed.
      */
-    int32_t status[16]; /**< 
+    int32_t status[8]; /**< 
       The status of the current skill execution for the appropriate channel.
      */
   } SkillerInterface_data_t;
