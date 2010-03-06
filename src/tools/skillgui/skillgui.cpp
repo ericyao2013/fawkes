@@ -306,7 +306,7 @@ void
 SkillGuiGtkWindow::on_stop_clicked()
 {
   if ( bb && __skiller_if && __skiller_if->is_valid() && __skiller_if->has_writer() ) {
-    SkillerInterface::StopExecMessage *sem = new SkillerInterface::StopExecMessage();
+    SkillerInterface::StopAllMessage *sem = new SkillerInterface::StopAllMessage();
     __skiller_if->msgq_enqueue(sem);
   }
 }
@@ -488,25 +488,31 @@ SkillGuiGtkWindow::on_skiller_data_changed()
   try {
     __skiller_if->read();
 
-    switch (__skiller_if->status()) {
-    case SkillerInterface::S_INACTIVE:
-      __throbber->stop_anim();
-      lab_status->set_text("S_INACTIVE");
-      break;
-    case SkillerInterface::S_FINAL:
-      __throbber->stop_anim();
-      __throbber->set_stock(Gtk::Stock::APPLY);
-      lab_status->set_text("S_FINAL");
-      break;
-    case SkillerInterface::S_RUNNING:
-      __throbber->start_anim();
-      lab_status->set_text("S_RUNNING");
-      break;
-    case SkillerInterface::S_FAILED:
+    unsigned int inactive = 0, final = 0, running = 0, failed = 0;
+    SkillerInterface::SkillStatusEnum *status = __skiller_if->status();
+    for (unsigned int i = 0; i < __skiller_if->maxlenof_status(); ++i) {
+      switch (status[i]) {
+      case SkillerInterface::S_INACTIVE: ++inactive; break;
+      case SkillerInterface::S_FINAL:    ++final;    break;
+      case SkillerInterface::S_RUNNING:  ++running;  break;
+      case SkillerInterface::S_FAILED:   ++failed;   break;
+      }
+    }
+
+    if (failed > 0) {
       __throbber->stop_anim();
       __throbber->set_stock(Gtk::Stock::DIALOG_WARNING);
       lab_status->set_text("S_FAILED");
-      break;
+    } else if (running > 0) {
+      __throbber->start_anim();
+      lab_status->set_text("S_RUNNING");
+    } else if (final > 0) {
+      __throbber->stop_anim();
+      __throbber->set_stock(Gtk::Stock::APPLY);
+      lab_status->set_text("S_FINAL");
+    } else {
+      __throbber->stop_anim();
+      lab_status->set_text("S_INACTIVE");
     }
 
     lab_skillstring->set_text(__skiller_if->skill_string());
