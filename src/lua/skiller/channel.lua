@@ -48,7 +48,7 @@ end
 -- Execute one iteration of the skill
 function SkillChannel:loop()
    assert(self.func, "No skill string set for execution")
-   
+
 
    self.sandbox.__skill_status = { final={}, failed={}, running={} }
    self.func()
@@ -112,7 +112,7 @@ end
 
 --- Check if channel is failed.
 -- @return true if skill string execution failed, false otherwise
-function SkillChannel:final()
+function SkillChannel:failed()
    return self.statusval == skillstati.S_FAILED
 end
 
