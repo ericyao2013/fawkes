@@ -40,9 +40,8 @@ namespace fawkes {
   class LogView;
   class Throbber;
   class PluginTreeView;
+  class SkillChannelView;
 }
-
-class SkillChannelView;
 
 #ifdef USE_PAPYRUS
 class SkillGuiGraphViewport;
@@ -52,7 +51,7 @@ class SkillGuiGraphDrawingArea;
 
 class SkillGuiGtkWindow : public Gtk::Window
 {
- public:  
+ public:
   SkillGuiGtkWindow(BaseObjectType* cobject,
                     const Glib::RefPtr<Gtk::Builder> &builder);
   ~SkillGuiGtkWindow();
@@ -149,10 +148,10 @@ class SkillGuiGtkWindow : public Gtk::Window
   fawkes::SkillerDebugInterface *__skdbg_if;
   fawkes::SkillerDebugInterface *__agdbg_if;
 
-  fawkes::LogView         *__logview;
-  fawkes::Throbber        *__throbber;
-  fawkes::PluginTreeView  *__trv_plugins;
-  SkillChannelView 	  *__trv_skill_channels;
+  fawkes::LogView           *__logview;
+  fawkes::Throbber          *__throbber;
+  fawkes::PluginTreeView    *__trv_plugins;
+  fawkes::SkillChannelView  *__trv_skill_channels;
 };
 
 #endif

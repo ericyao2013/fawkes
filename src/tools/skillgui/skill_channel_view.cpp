@@ -28,7 +28,10 @@
 
 #include <iostream>
 
-using namespace fawkes;
+namespace fawkes {
+#if 0 /* just to make Emacs auto-indent happy */
+}
+#endif
 
 SkillChannelView::SkillChannelView()
 {
@@ -149,3 +152,5 @@ SkillChannelView::clear_channels()
   skill_channel_list->clear();
   __skiller_if = NULL;
 }
+
+} // end namespace fawkes

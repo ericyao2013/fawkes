@@ -30,11 +30,6 @@
 #include <string>
 #include <vector>
 
-namespace fawkes {
-  class BlackBoard;
-  class InterfaceDispatcher;
-}
-
 #include <gtkmm.h>
 #ifdef HAVE_GLADEMM
 #  include <libglademm/xml.h>
@@ -43,6 +38,13 @@ namespace fawkes {
 #  include <gconfmm.h>
 #endif
 
+namespace fawkes {
+#if 0 /* just to make Emacs auto-indent happy */
+}
+#endif
+
+class BlackBoard;
+class InterfaceDispatcher;
 
 class SkillChannelView : public Gtk::TreeView
 {
@@ -130,5 +132,7 @@ private:
 
   fawkes::SkillerInterface *__skiller_if;
 };
+
+} // end namespace fawkes
 
 #endif
