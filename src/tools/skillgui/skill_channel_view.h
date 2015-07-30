@@ -20,8 +20,8 @@
  *  Read the full text in the LICENSE.GPL file in the doc directory.
  */
 
-#ifndef __GUI_UTILS_SKILL_CHANNEL_VIEW_H_
-#define __GUI_UTILS_SKILL_CHANNEL_VIEW_H_
+#ifndef __TOOLS_SKILLGUI_SKILL_CHANNEL_VIEW_H_
+#define __TOOLS_SKILLGUI_SKILL_CHANNEL_VIEW_H_
 
 #include <gui_utils/connection_dispatcher.h>
 #include <interfaces/SkillerInterface.h>
