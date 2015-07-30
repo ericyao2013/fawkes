@@ -91,6 +91,7 @@ SkillChannelView::update_channels()
 {
   skill_string = new SkillString(__skiller_if->skill_string());
   unsigned channel_number = 0;
+  unsigned int active_channel_number = 0;
   Gtk::TreeModel::Children children = skill_channel_list->children();
   for(Gtk::TreeModel::Children::iterator iter = children.begin();
       iter != children.end(); ++iter)
@@ -102,7 +103,13 @@ SkillChannelView::update_channels()
     row[skill_channel_record.channel_number] = channel_number + 1; //Lua is 1-based
     row[skill_channel_record.status] = get_status_text(status);
     row[skill_channel_record.status_color] = get_status_color(status);
-    row[skill_channel_record.skill_string] = skill_string->get_channel(channel_number);
+    if( status != SkillerInterface::S_INACTIVE ) {
+      row[skill_channel_record.skill_string] = skill_string->get_channel(active_channel_number);
+      ++active_channel_number;
+    } else {
+      row[skill_channel_record.skill_string] = "";
+    }
+
     ++channel_number;
   }
   delete skill_string;

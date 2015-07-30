@@ -108,11 +108,20 @@ private:
       size_t pos2;
       while ((pos2 = skill_string.find("||", pos1)) != skill_string.npos)
       {
-        channel_strings.push_back(skill_string.substr(pos1, pos2-pos1));
+        add_skill_string( skill_string.substr(pos1, pos2-pos1) );
         pos1 = pos2 + 2;
       }
       if (pos1 < skill_string.length())
-        channel_strings.push_back(skill_string.substr(pos1));
+        add_skill_string( skill_string.substr(pos1) );
+    }
+
+    void add_skill_string(std::string str)
+    {
+      // trim prefix and suffix whitespaces
+      str.erase(0, str.find_first_not_of(' '));
+      str.erase(str.find_last_not_of(' ')+1);
+
+      channel_strings.push_back(str);
     }
 
     std::vector<std::string> channel_strings;
