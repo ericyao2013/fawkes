@@ -38,14 +38,12 @@ SkillChannelView::SkillChannelView()
   ctor();
 }
 
-#ifdef HAVE_GLADEMM
 SkillChannelView::SkillChannelView(BaseObjectType* cobject,
-    const Glib::RefPtr<Gnome::Glade::Xml> ref_xml)
+    const Glib::RefPtr<Gtk::Builder> builder)
   : Gtk::TreeView(cobject)
 {
   ctor();
 }
-#endif
 
 void
 SkillChannelView::ctor()

@@ -31,9 +31,6 @@
 #include <vector>
 
 #include <gtkmm.h>
-#ifdef HAVE_GLADEMM
-#  include <libglademm/xml.h>
-#endif
 #ifdef HAVE_GCONFMM
 #  include <gconfmm.h>
 #endif
@@ -51,9 +48,7 @@ class SkillChannelView : public Gtk::TreeView
 
 public:
   SkillChannelView();
-#ifdef HAVE_GLADEMM
-  SkillChannelView(BaseObjectType* cobject, const Glib::RefPtr<Gnome::Glade::Xml> ref_xml);
-#endif
+  SkillChannelView(BaseObjectType* cobject, const Glib::RefPtr<Gtk::Builder> builder);
   virtual ~SkillChannelView();
 
   void set_gconf_prefix(Glib::ustring gconf_prefix);
