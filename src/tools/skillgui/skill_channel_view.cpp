@@ -59,10 +59,15 @@ SkillChannelView::ctor()
 
   append_column("#", skill_channel_record.channel_number);
   append_column(*Gtk::manage(status_column));
+  append_column_editable("Stop", skill_channel_record.stop);
   append_column("Skill String", skill_channel_record.skill_string);
 
   status_column->add_attribute(status_renderer->property_text(),skill_channel_record.status);
   status_column->add_attribute(status_renderer->property_cell_background(), skill_channel_record.status_color);
+
+  Gtk::CellRendererToggle* renderer;
+  renderer = dynamic_cast<Gtk::CellRendererToggle*>( get_column_cell_renderer(2) );
+  renderer->signal_toggled().connect( sigc::mem_fun(*this, &SkillChannelView::on_stop_toggled));
 }
 
 SkillChannelView::~SkillChannelView()
@@ -93,6 +98,7 @@ SkillChannelView::update_channels()
     SkillerInterface::SkillStatusEnum status = __skiller_if->status(channel_number);
 
     Gtk::TreeModel::Row row = *iter;
+    row[skill_channel_record.stop] = false; // = status == SkillerInterface::S_INACTIVE ?  :;
     row[skill_channel_record.channel_number] = channel_number + 1; //Lua is 1-based
     row[skill_channel_record.status] = get_status_text(status);
     row[skill_channel_record.status_color] = get_status_color(status);
@@ -151,6 +157,23 @@ SkillChannelView::clear_channels()
 {
   skill_channel_list->clear();
   __skiller_if = NULL;
+}
+
+/** Signal handler that is called when the stop-checkbox is
+ * toggled.
+ * @param path the path of the selected row
+ */
+void
+SkillChannelView::on_stop_toggled(const Glib::ustring& path)
+{
+  if ( !__skiller_if->is_valid() || !__skiller_if->has_writer() )
+    return;
+
+  Gtk::TreeModel::Row row = *skill_channel_list->get_iter(path);
+  unsigned int channel = row[skill_channel_record.channel_number];
+
+  SkillerInterface::StopExecMessage *sem = new SkillerInterface::StopExecMessage(channel);
+  __skiller_if->msgq_enqueue(sem);
 }
 
 } // end namespace fawkes

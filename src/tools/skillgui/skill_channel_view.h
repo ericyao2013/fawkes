@@ -62,12 +62,14 @@ private:
   public:
     SkillChannelRecord()
     {
+      add(stop);
       add(channel_number);
       add(skill_string);
       add(status);
       add(status_color);
     }
 
+    Gtk::TreeModelColumn<bool> stop;
     Gtk::TreeModelColumn<unsigned> channel_number;
     Gtk::TreeModelColumn<Glib::ustring> skill_string;
     Gtk::TreeModelColumn<Glib::ustring> status;
@@ -120,6 +122,7 @@ private:
   void ctor();
   std::string get_status_text(fawkes::SkillerInterface::SkillStatusEnum status);
   Glib::ustring get_status_color(fawkes::SkillerInterface::SkillStatusEnum status);
+  void on_stop_toggled(const Glib::ustring& path);
 
   SkillChannelRecord skill_channel_record;
   Glib::RefPtr<Gtk::ListStore> skill_channel_list;
