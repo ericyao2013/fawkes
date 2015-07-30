@@ -57,7 +57,7 @@ SkillChannelView::ctor()
   Gtk::CellRendererText *status_renderer = Gtk::manage(new Gtk::CellRendererText());
   Gtk::TreeViewColumn *status_column = new Gtk::TreeViewColumn("Status", *status_renderer);
 
-  append_column("Ch. #", skill_channel_record.channel_number);
+  append_column("#", skill_channel_record.channel_number);
   append_column(*Gtk::manage(status_column));
   append_column("Skill String", skill_channel_record.skill_string);
 
@@ -90,10 +90,12 @@ SkillChannelView::update_channels()
   for(Gtk::TreeModel::Children::iterator iter = children.begin();
       iter != children.end(); ++iter)
   {
+    SkillerInterface::SkillStatusEnum status = __skiller_if->status(channel_number);
+
     Gtk::TreeModel::Row row = *iter;
-    row[skill_channel_record.channel_number] = channel_number;
-    row[skill_channel_record.status] = get_status_text(__skiller_if->status(channel_number));
-    row[skill_channel_record.status_color] = get_status_color(__skiller_if->status(channel_number));
+    row[skill_channel_record.channel_number] = channel_number + 1; //Lua is 1-based
+    row[skill_channel_record.status] = get_status_text(status);
+    row[skill_channel_record.status_color] = get_status_color(status);
     row[skill_channel_record.skill_string] = skill_string->get_channel(channel_number);
     ++channel_number;
   }
