@@ -62,14 +62,14 @@ private:
   public:
     SkillChannelRecord()
     {
-      add(stop);
+      add(stoppable);
       add(channel_number);
       add(skill_string);
       add(status);
       add(status_color);
     }
 
-    Gtk::TreeModelColumn<bool> stop;
+    Gtk::TreeModelColumn<bool> stoppable;
     Gtk::TreeModelColumn<unsigned> channel_number;
     Gtk::TreeModelColumn<Glib::ustring> skill_string;
     Gtk::TreeModelColumn<Glib::ustring> status;

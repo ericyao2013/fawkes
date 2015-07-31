@@ -54,20 +54,24 @@ SkillChannelView::ctor()
   skill_channel_list = Gtk::ListStore::create(skill_channel_record);
   set_model(skill_channel_list);
   get_selection()->set_mode(Gtk::SELECTION_NONE);
+
   Gtk::CellRendererText *status_renderer = Gtk::manage(new Gtk::CellRendererText());
   Gtk::TreeViewColumn *status_column = new Gtk::TreeViewColumn("Status", *status_renderer);
 
+  Gtk::CellRendererToggle *stop_renderer = Gtk::manage(new Gtk::CellRendererToggle());
+  Gtk::TreeViewColumn *stop_column = new Gtk::TreeViewColumn("Stop", *stop_renderer);
+
   append_column("#", skill_channel_record.channel_number);
   append_column(*Gtk::manage(status_column));
-  append_column_editable("Stop", skill_channel_record.stop);
+  append_column(*Gtk::manage(stop_column));
   append_column("Skill String", skill_channel_record.skill_string);
 
   status_column->add_attribute(status_renderer->property_text(),skill_channel_record.status);
   status_column->add_attribute(status_renderer->property_cell_background(), skill_channel_record.status_color);
 
-  Gtk::CellRendererToggle* renderer;
-  renderer = dynamic_cast<Gtk::CellRendererToggle*>( get_column_cell_renderer(2) );
-  renderer->signal_toggled().connect( sigc::mem_fun(*this, &SkillChannelView::on_stop_toggled));
+  stop_renderer->signal_toggled().connect( sigc::mem_fun(*this, &SkillChannelView::on_stop_toggled));
+  stop_column->add_attribute(stop_renderer->property_activatable(), skill_channel_record.stoppable);
+  stop_column->add_attribute(stop_renderer->property_visible(), skill_channel_record.stoppable);
 }
 
 SkillChannelView::~SkillChannelView()
@@ -99,7 +103,7 @@ SkillChannelView::update_channels()
     SkillerInterface::SkillStatusEnum status = __skiller_if->status(channel_number);
 
     Gtk::TreeModel::Row row = *iter;
-    row[skill_channel_record.stop] = false; // = status == SkillerInterface::S_INACTIVE ?  :;
+    row[skill_channel_record.stoppable] = status != SkillerInterface::S_INACTIVE;
     row[skill_channel_record.channel_number] = channel_number + 1; //Lua is 1-based
     row[skill_channel_record.status] = get_status_text(status);
     row[skill_channel_record.status_color] = get_status_color(status);
