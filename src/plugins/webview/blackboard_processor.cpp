@@ -306,6 +306,16 @@ WebviewBlackBoardRequestProcessor::process_request(const fawkes::WebRequest *req
                           "<input type=\"radio\" name=\"%s\" value=\"false\">false<br>\n",
                           mfi.get_name(), mfi.get_typename(), mfi.get_name(), mfi.get_name());
                     break;
+                  case IFT_ENUM:
+                    {
+                      std::list<const char*> enum_values = mfi.get_enum_valuenames();
+                      r->append_body("%s:<br>", mfi.get_name());
+                      for (std::list<const char*>::iterator enum_it = enum_values.begin(); enum_it != enum_values.end(); ++enum_it) { // TODO improve formatting
+                        r->append_body("<input type=\"radio\" name=\"%s\" value=\"%s\">%s<br>",
+                            mfi.get_name(), *enum_it, *enum_it);
+                      }
+                      break;
+                    }
                   default:
                     r->append_body("%s (%s): <input type=\"text\" name=\"%s\" ><br>\n",
                           mfi.get_name(), mfi.get_typename(), mfi.get_name());
