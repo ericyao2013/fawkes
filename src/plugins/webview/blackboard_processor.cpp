@@ -274,8 +274,50 @@ WebviewBlackBoardRequestProcessor::process_request(const fawkes::WebRequest *req
 	    *r += " </tr>\n";
 	  }
 	  r->append_body("</table>\n");
+
+        // Show possible messages
+        std::list<const char *> msg_types = iface->get_message_types();
+        if (!msg_types.empty()){
+          *r +="<h3>Messages</h3>";
+
+          /*r->append_body("<table>\n"
+                   " <tr>\n"
+                   "  <th>Name</th><th>Field Name</th><th>Type</th><th>Value</th>\n"
+                   " </tr>\n");
+        */
+          for (std::list<const char *>::iterator msgit = msg_types.begin(); msgit != msg_types.end(); ++msgit) {
+            r->append_body("<b>%s</b>", *msgit);
+            r->append_body("<p><form action=\"%s/view/%s/send/%s\" method=\"post\">",
+                        __baseurl, iuid.c_str(), *msgit);
+            Message* ifmsg = iface->create_message(*msgit);
+              /*r->append_body("  <td rowspan=\"%d\">%s</td>\n </tr>\n",
+                             ifmsg->num_fields()+1,
+                            *msgit);*/
+            for (InterfaceFieldIterator mfi = ifmsg->fields(); mfi != ifmsg->fields_end(); ++mfi) {
+              //*r += " <tr>\n";
+              if ( mfi.get_length() > 1 ) {
+                r->append_body("%s (%s [%zu]): <input type=\"text\" name=\"%s\" ><br>\n",
+                          mfi.get_name(), mfi.get_typename(),
+                          mfi.get_length(), mfi.get_name());
+              } else {
+                switch (mfi.get_type()) {
+                  case IFT_BOOL:
+                    r->append_body("%s (%s): <input type=\"radio\" name=\"%s\" value=\"true\" checked>true"
+                          "<input type=\"radio\" name=\"%s\" value=\"false\">false<br>\n",
+                          mfi.get_name(), mfi.get_typename(), mfi.get_name(), mfi.get_name());
+                    break;
+                  default:
+                    r->append_body("%s (%s): <input type=\"text\" name=\"%s\" ><br>\n",
+                          mfi.get_name(), mfi.get_typename(), mfi.get_name());
+                }
+              }
+            }
+            *r += "<input type=\"submit\" value=\"Send\" /></form></p>\n";
+          }
+          //r->append_body("</table>\n");
+        }
 	  r->append_body("<p><a href=\"%s\">Clear detailed</a></p>\n", __baseurl);
-	}
+      }
       } else if (subpath.find("/graph") == 0) {
 	std::string graph_baseurl("/graph/");
 	std::string graph_node =
