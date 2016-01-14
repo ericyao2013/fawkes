@@ -25,6 +25,8 @@
 #include <webview/file_reply.h>
 #include <webview/error_reply.h>
 
+#include <core/exceptions/software.h>
+
 #include <blackboard/blackboard.h>
 #include <interface/interface.h>
 #include <interface/field_iterator.h>
@@ -162,7 +164,18 @@ WebviewBlackBoardRequestProcessor::process_request(const fawkes::WebRequest *req
       }
 
       if (subpath.find("/view/") == 0) {
-	std::string iuid = subpath.substr(subpath.find_first_not_of("/", std::string("/view/").length()));
+        std::string iuid = "";
+        try {
+          std::size_t tmp = subpath.find_first_not_of("/", std::string("/view/").length());
+          if (tmp == std::string::npos) { throw IllegalArgumentException("String ended after \"/view/\"."); }
+          iuid = subpath.substr(tmp);
+        } catch (Exception &e) {
+          return new WebErrorPageReply(WebReply::HTTP_NOT_FOUND,
+                           "Could not parse interface id: %s", e.what());
+        } catch (std::exception &e) {
+          return new WebErrorPageReply(WebReply::HTTP_NOT_FOUND,
+                           "Could not parse interface id: %s", e.what());
+        }
 	std::string iftype = iuid.substr(0, iuid.find("::"));
 	std::string ifname = iuid.substr(iuid.find("::") + 2);
 
