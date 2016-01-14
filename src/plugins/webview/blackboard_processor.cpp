@@ -176,6 +176,15 @@ WebviewBlackBoardRequestProcessor::process_request(const fawkes::WebRequest *req
           return new WebErrorPageReply(WebReply::HTTP_NOT_FOUND,
                            "Could not parse interface id: %s", e.what());
         }
+        std::string message_type;
+        bool send = false;
+        if (iuid.find("/send/") != std::string::npos) {
+          std::string::size_type slash_pos1 = iuid.find("/");
+          std::string::size_type slash_pos2 = iuid.find("/", slash_pos1+1);
+          message_type = iuid.substr(slash_pos2+1,iuid.length());
+          iuid = iuid.substr(0,slash_pos1);
+          send = true;
+      }
 	std::string iftype = iuid.substr(0, iuid.find("::"));
 	std::string ifname = iuid.substr(iuid.find("::") + 2);
 
@@ -191,6 +200,41 @@ WebviewBlackBoardRequestProcessor::process_request(const fawkes::WebRequest *req
 	if (__interfaces.find(iuid) != __interfaces.end()) {
 	  Interface *iface = __interfaces[iuid];
 	  iface->read();
+
+        if(send){
+          // handle send message request
+          Message* msg_to_send = iface->create_message(message_type.c_str()); //TODO catch if not possible
+          bool no_errors = true;
+          if (!iface->has_writer()){
+            r->append_body("<font color=\"red\">Error: Cannot send message because the interface has no writer!</font>\n");
+            no_errors = false;
+          }else{
+            for (InterfaceFieldIterator mfi = msg_to_send->fields(); mfi != msg_to_send->fields_end(); ++mfi) {
+              if(!request->post_value(mfi.get_name()).empty()){
+
+                switch(mfi.get_type()){
+                  case IFT_STRING: // TODO check length of input
+                      mfi.set_string(request->post_value(mfi.get_name()).c_str());
+                    break;
+                  case IFT_ENUM:
+                    mfi.set_enum_string(request->post_value(mfi.get_name()).c_str());
+                    break;
+                  case IFT_BOOL:
+                    mfi.set_bool( (strcmp("true",request->post_value(mfi.get_name()).c_str()) != 0) ? true : false);
+                    break;
+                  default:
+                    r->append_body("<font color=\"red\">Error: Type %s is currently not supported by webview send message functionality.</font>\n", mfi.get_typename());
+                    no_errors = false;
+                }
+                r->append_body("Received value %s for the field %s\n",request->post_value(mfi.get_name()).c_str(), mfi.get_name());
+              }
+            }
+          }
+          if (no_errors){
+            unsigned int msg_id = iface->msgq_enqueue(msg_to_send);
+             r->append_body("Sent Message of type %s with id %d\n",message_type.c_str(), msg_id);
+          }
+        }
 
 	  /*
 	   *r += "<script type=\"text/javascript\">\n"
