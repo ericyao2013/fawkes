@@ -37,6 +37,7 @@
 #include <string>
 #include <cstring>
 #include <cstdlib>
+#include <limits>
 
 #include <set>
 #include <sstream>
@@ -360,6 +361,13 @@ WebviewBlackBoardRequestProcessor::process_request(const fawkes::WebRequest *req
                       }
                       break;
                     }
+                  case IFT_UINT32:
+                    r->append_body("%s (%s):\n  <input type=\"number\" min=\"%u\" max=\"%u\" step=\"1\" id=\"%s-%s\" name=\"%s\" pattern=\"\\d+\"><br>\n",
+                                   mfi.get_name(), mfi.get_typename(),
+                                   std::numeric_limits<uint32_t>::min(),
+                                   std::numeric_limits<uint32_t>::max(), *msgit, mfi.get_name(),
+                                   mfi.get_name()); //TODO for other ints
+                    break;
                   default:
                     r->append_body("%s (%s): <input type=\"text\" name=\"%s\" ><br>\n",
                           mfi.get_name(), mfi.get_typename(), mfi.get_name());
