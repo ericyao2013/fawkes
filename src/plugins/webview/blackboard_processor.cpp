@@ -177,10 +177,10 @@ WebviewBlackBoardRequestProcessor::process_request(const fawkes::WebRequest *req
           iuid = subpath.substr(tmp);
         } catch (Exception &e) {
           return new WebErrorPageReply(WebReply::HTTP_NOT_FOUND,
-                           "Could not parse interface id: %s", e.what());
+                           "Could not parse interface id: %s<br>\n<a href=\"%s\">Back to BlackBoard</a>", e.what(), __baseurl);
         } catch (std::exception &e) {
           return new WebErrorPageReply(WebReply::HTTP_NOT_FOUND,
-                           "Could not parse interface id: %s", e.what());
+                           "Could not parse interface id: %s<br>\n<a href=\"%s\">Back to BlackBoard</a>", e.what(), __baseurl);
         }
         std::string message_type;
         bool send = false;
@@ -209,7 +209,13 @@ WebviewBlackBoardRequestProcessor::process_request(const fawkes::WebRequest *req
 
         if(send){
           // handle send message request
-          Message* msg_to_send = iface->create_message(message_type.c_str()); //TODO catch if not possible
+          Message* msg_to_send;
+          try {
+            msg_to_send = iface->create_message(message_type.c_str());
+          } catch (Exception &e) {
+            return new WebErrorPageReply(WebReply::HTTP_NOT_FOUND,
+                           "Could not parse message name: %s<br>\n <a href=\"%s/view/%s::%s\">Back to %s::%s</a>", e.what(), __baseurl, iftype.c_str(), ifname.c_str(), iftype.c_str(), ifname.c_str());
+          }
           bool no_errors = true;
           if (!iface->has_writer()){
             r->append_body("<font color=\"red\">Error: Cannot send message because the interface has no writer!</font>\n");
