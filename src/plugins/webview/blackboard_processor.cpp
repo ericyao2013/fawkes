@@ -33,6 +33,7 @@
 #include <interface/interface_info.h>
 #include <utils/time/time.h>
 #include <utils/misc/string_split.h>
+#include <utils/misc/string_conversions.h>
 
 #include <string>
 #include <cstring>
@@ -224,21 +225,84 @@ WebviewBlackBoardRequestProcessor::process_request(const fawkes::WebRequest *req
             for (InterfaceFieldIterator mfi = msg_to_send->fields(); mfi != msg_to_send->fields_end(); ++mfi) {
               if(!request->post_value(mfi.get_name()).empty()){
 
-                switch(mfi.get_type()){
-                  case IFT_STRING: // TODO check length of input
-                      mfi.set_string(request->post_value(mfi.get_name()).c_str());
-                    break;
-                  case IFT_ENUM:
-                    mfi.set_enum_string(request->post_value(mfi.get_name()).c_str());
-                    break;
-                  case IFT_BOOL:
-                    mfi.set_bool( (strcmp("true",request->post_value(mfi.get_name()).c_str()) != 0) ? true : false);
-                    break;
-                  default:
-                    r->append_body("<font color=\"red\">Error: Type %s is currently not supported by webview send message functionality.</font>\n", mfi.get_typename());
-                    no_errors = false;
+                if (mfi.get_length() > 1 && mfi.get_type() != IFT_STRING){
+                  r->append_body("<font color=\"red\">Error: Type array is currently not supported by webview send message functionality.</font><br>\n");
+                  no_errors = false;
+                } else {
+                  switch(mfi.get_type()){
+                    case IFT_STRING: {
+                        std::string str = request->post_value(mfi.get_name());
+                        if (str.length() > mfi.get_length()) {
+                          r->append_body("<font color=\"red\">Error: The entered string is longer than %i! </font><br>\n", mfi.get_length());
+                          no_errors = false;
+                        } else {
+                          mfi.set_string(str.c_str());
+                          printf("received string, it is at most of length: %lu<br>\n", mfi.get_length());
+                        }
+                      break;
+                    }
+                    case IFT_ENUM:
+                      mfi.set_enum_string(request->post_value(mfi.get_name()).c_str());
+                      break;
+                    case IFT_BOOL:
+                      mfi.set_bool( (strcmp("true",request->post_value(mfi.get_name()).c_str()) != 0) ? true : false);
+                      break;
+                    case IFT_INT8: {
+                      int i = StringConversions::to_int(request->post_value(mfi.get_name()));
+                      mfi.set_int8(i);
+                      break;
+                    }
+                    case IFT_UINT8: {
+                      unsigned int i = StringConversions::to_uint(request->post_value(mfi.get_name()));
+                      mfi.set_uint8(i);
+                      break;
+                    }
+                    case IFT_INT16: {
+                      int i = StringConversions::to_int(request->post_value(mfi.get_name()));
+                      mfi.set_int16(i);
+                      break;
+                    }
+                    case IFT_UINT16: {
+                      unsigned int i = StringConversions::to_uint(request->post_value(mfi.get_name()));
+                      mfi.set_uint16(i);
+                      break;
+                    }
+                    case IFT_INT32: {
+                      int i = StringConversions::to_int(request->post_value(mfi.get_name()));
+                      mfi.set_int32(i);
+                      break;
+                    }
+                    case IFT_UINT32: {
+                      unsigned int i = StringConversions::to_uint(request->post_value(mfi.get_name()));
+                      mfi.set_uint32(i);
+                      break;
+                    }
+                    case IFT_INT64: {
+                      int i = StringConversions::to_int(request->post_value(mfi.get_name()));
+                      mfi.set_int64(i);
+                      break;
+                    }
+                    case IFT_UINT64: {
+                      unsigned int i = StringConversions::to_uint(request->post_value(mfi.get_name()));
+                      mfi.set_uint64(i);
+                      break;
+                    }
+                    case IFT_FLOAT: {
+                      float f = StringConversions::to_float(request->post_value(mfi.get_name()));
+                      mfi.set_float(f);
+                      break;
+                    }
+                    case IFT_DOUBLE: {
+                      double d = StringConversions::to_double(request->post_value(mfi.get_name()));
+                      mfi.set_float(d);
+                      break;
+                    }
+                    default:
+                      r->append_body("<font color=\"red\">Error: Type %s is currently not supported by webview send message functionality.</font>\n", mfi.get_typename());
+                      no_errors = false;
+                  }
+                  r->append_body("Received value %s for the field \"%s\".\n",request->post_value(mfi.get_name()).c_str(), mfi.get_name());
                 }
-                r->append_body("Received value %s for the field %s\n",request->post_value(mfi.get_name()).c_str(), mfi.get_name());
               }
             }
           }
@@ -346,7 +410,6 @@ WebviewBlackBoardRequestProcessor::process_request(const fawkes::WebRequest *req
             r->append_body("<div class=\"msg-name-%s\"><h5 class=\"close\">%s</h5></div>\n", *msgit, *msgit);
             r->append_body("<div class=\"msg-form-%s\" id=\"msg-form-%s\">\n<form action=\"%s/view/%s/send/%s\" method=\"post\">\n",
                         *msgit, *msgit, __baseurl, iuid.c_str(), *msgit);
-                        __baseurl, iuid.c_str(), *msgit);
             Message* ifmsg = iface->create_message(*msgit);
               /*r->append_body("  <td rowspan=\"%d\">%s</td>\n </tr>\n",
                              ifmsg->num_fields()+1,
