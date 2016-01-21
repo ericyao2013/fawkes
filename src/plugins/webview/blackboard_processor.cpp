@@ -60,13 +60,15 @@ using namespace fawkes;
 /** Constructor.
  * @param baseurl Base URL where processor is mounted
  * @param blackboard BlackBoard instance
+ * @param enable_msgs whether to allow sending msgs via webview
  */
 WebviewBlackBoardRequestProcessor::WebviewBlackBoardRequestProcessor(const char *baseurl,
-								     BlackBoard *blackboard)
+								     BlackBoard *blackboard, bool enable_msgs)
 {
   __baseurl     = strdup(baseurl);
   __baseurl_len = strlen(__baseurl);
   __blackboard  = blackboard;
+  __enable_msgs = enable_msgs;
 }
 
 
@@ -397,7 +399,7 @@ WebviewBlackBoardRequestProcessor::process_request(const fawkes::WebRequest *req
 
         // Show possible messages
         std::list<const char *> msg_types = iface->get_message_types();
-        if (!msg_types.empty()){
+        if (!msg_types.empty() && __enable_msgs){
           *r +="<h3>Messages</h3>\n";
 
           /*r->append_body("<table>\n"
@@ -504,7 +506,6 @@ WebviewBlackBoardRequestProcessor::process_request(const fawkes::WebRequest *req
             }
             *r += "  <input type=\"submit\" value=\"Send\" />\n</form>\n</div>\n";
           }
-          //r->append_body("</table>\n");
         }
 	  r->append_body("<p><a href=\"%s\">Clear detailed</a></p>\n", __baseurl);
       }
