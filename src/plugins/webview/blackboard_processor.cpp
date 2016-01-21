@@ -121,6 +121,10 @@ WebviewBlackBoardRequestProcessor::process_request(const fawkes::WebRequest *req
       WebPageReply *r = new WebPageReply("BlackBoard");
       r->set_html_header("  <link type=\"text/css\" href=\""
 			 "/static/css/jqtheme/jquery-ui.custom.css\" rel=\"stylesheet\" />\n"
+                   "  <script type=\"text/javascript\" src=\"/static/js/"
+                   "jquery.min.js\"></script>\n"
+                   "  <script type=\"text/javascript\" src=\"/static/js/"
+                   "jquery-ui.custom.min.js\"></script>\n"
 			 "  <link type=\"text/css\" href=\""
 			 "/static/css/blackboard.css\" rel=\"stylesheet\" />\n");
 
@@ -164,6 +168,7 @@ WebviewBlackBoardRequestProcessor::process_request(const fawkes::WebRequest *req
 	*r += "<p><b>No interfaces found.</b></p>\n";
       }
 
+      std::list<const char *> all_msgs; // needed for collapsible msg forms
       if (subpath.find("/view/") == 0) {
         std::string iuid = "";
         try {
@@ -323,7 +328,7 @@ WebviewBlackBoardRequestProcessor::process_request(const fawkes::WebRequest *req
         // Show possible messages
         std::list<const char *> msg_types = iface->get_message_types();
         if (!msg_types.empty()){
-          *r +="<h3>Messages</h3>";
+          *r +="<h3>Messages</h3>\n";
 
           /*r->append_body("<table>\n"
                    " <tr>\n"
@@ -331,8 +336,10 @@ WebviewBlackBoardRequestProcessor::process_request(const fawkes::WebRequest *req
                    " </tr>\n");
         */
           for (std::list<const char *>::iterator msgit = msg_types.begin(); msgit != msg_types.end(); ++msgit) {
-            r->append_body("<b>%s</b>", *msgit);
-            r->append_body("<p><form action=\"%s/view/%s/send/%s\" method=\"post\">",
+            all_msgs.push_front(*msgit);
+            r->append_body("<div class=\"msg-name-%s\"><h5 class=\"close\">%s</h5></div>\n", *msgit, *msgit);
+            r->append_body("<div class=\"msg-form-%s\" id=\"msg-form-%s\">\n<form action=\"%s/view/%s/send/%s\" method=\"post\">\n",
+                        *msgit, *msgit, __baseurl, iuid.c_str(), *msgit);
                         __baseurl, iuid.c_str(), *msgit);
             Message* ifmsg = iface->create_message(*msgit);
               /*r->append_body("  <td rowspan=\"%d\">%s</td>\n </tr>\n",
@@ -347,16 +354,16 @@ WebviewBlackBoardRequestProcessor::process_request(const fawkes::WebRequest *req
               } else {
                 switch (mfi.get_type()) {
                   case IFT_BOOL:
-                    r->append_body("%s (%s): <input type=\"radio\" name=\"%s\" value=\"true\" checked>true"
-                          "<input type=\"radio\" name=\"%s\" value=\"false\">false<br>\n",
+                    r->append_body("%s (%s):\n  <input type=\"radio\" name=\"%s\" value=\"true\" checked>true\n"
+                          "  <input type=\"radio\" name=\"%s\" value=\"false\">false<br>\n",
                           mfi.get_name(), mfi.get_typename(), mfi.get_name(), mfi.get_name());
                     break;
                   case IFT_ENUM:
                     {
                       std::list<const char*> enum_values = mfi.get_enum_valuenames();
-                      r->append_body("%s:<br>", mfi.get_name());
+                      r->append_body("%s:<br>\n", mfi.get_name());
                       for (std::list<const char*>::iterator enum_it = enum_values.begin(); enum_it != enum_values.end(); ++enum_it) { // TODO improve formatting
-                        r->append_body("<input type=\"radio\" name=\"%s\" value=\"%s\">%s<br>",
+                        r->append_body("  <input type=\"radio\" name=\"%s\" value=\"%s\">%s<br>\n",
                             mfi.get_name(), *enum_it, *enum_it);
                       }
                       break;
@@ -374,7 +381,7 @@ WebviewBlackBoardRequestProcessor::process_request(const fawkes::WebRequest *req
                 }
               }
             }
-            *r += "<input type=\"submit\" value=\"Send\" /></form></p>\n";
+            *r += "  <input type=\"submit\" value=\"Send\" />\n</form>\n</div>\n";
           }
           //r->append_body("</table>\n");
         }
@@ -415,6 +422,13 @@ WebviewBlackBoardRequestProcessor::process_request(const fawkes::WebRequest *req
 	  r->append_body("<p><a href=\"%s/graph\">Full Graph</a></p>\n\n", __baseurl);
 	}
       }
+      r->append_body("<script>\n");
+      for (std::list<const char *>::iterator it = all_msgs.begin(); it != all_msgs.end(); ++it){
+        r->append_body( "  $('.msg-name-%s').click(function(){\n    $('.msg-form-%s').slideToggle('slow');\n  });\n", *it, *it);
+        //r->append_body("  $('.msg-form-%s').style.display=\"none\";", *it);
+        r->append_body("  document.getElementById(\"msg-form-%s\").style.display=\"none\";", *it);
+      }
+      r->append_body("\n</script>");
       return r;
     }
 
@@ -422,6 +436,7 @@ WebviewBlackBoardRequestProcessor::process_request(const fawkes::WebRequest *req
     return NULL;
   }
 }
+
 
 #if defined(HAVE_GRAPHVIZ) && ((defined(__GNUC__) && (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 5))) || defined(__clang__))
 std::string
