@@ -437,13 +437,56 @@ WebviewBlackBoardRequestProcessor::process_request(const fawkes::WebRequest *req
                       }
                       break;
                     }
+                  case IFT_INT8:
+                    {
+                      std::string form = get_input_form_string<int8_t>(*msgit, mfi.get_name(), mfi.get_typename());
+                      r->append_body(form.c_str());
+                      break;
+                    }
+                  case IFT_BYTE:
+                  case IFT_UINT8:
+                    {
+                      std::string form = get_input_form_string<uint8_t>(*msgit, mfi.get_name(), mfi.get_typename());
+                      r->append_body(form.c_str());
+                      break;
+                    }
+                  case IFT_INT16:
+                    {
+                      std::string form = get_input_form_string<int16_t>(*msgit, mfi.get_name(), mfi.get_typename());
+                      r->append_body(form.c_str());
+                      break;
+                    }
+                  case IFT_UINT16:
+                    {
+                      std::string form = get_input_form_string<uint16_t>(*msgit, mfi.get_name(), mfi.get_typename());
+                      r->append_body(form.c_str());
+                      break;
+                    }
+                  case IFT_INT32:
+                    {
+                      std::string form = get_input_form_string<int32_t>(*msgit, mfi.get_name(), mfi.get_typename());
+                      r->append_body(form.c_str());
+                      break;
+                    }
                   case IFT_UINT32:
-                    r->append_body("%s (%s):\n  <input type=\"number\" min=\"%u\" max=\"%u\" step=\"1\" id=\"%s-%s\" name=\"%s\" pattern=\"\\d+\"><br>\n",
-                                   mfi.get_name(), mfi.get_typename(),
-                                   std::numeric_limits<uint32_t>::min(),
-                                   std::numeric_limits<uint32_t>::max(), *msgit, mfi.get_name(),
-                                   mfi.get_name()); //TODO for other ints
-                    break;
+                    {
+                      std::string form = get_input_form_string<uint32_t>(*msgit, mfi.get_name(), mfi.get_typename());
+                      r->append_body(form.c_str());
+                      break;
+                    }
+                  case IFT_INT64:
+                    {
+                      std::string form = get_input_form_string<int64_t>(*msgit, mfi.get_name(), mfi.get_typename());
+                      r->append_body(form.c_str());
+                      break;
+                    }
+                  case IFT_UINT64:
+                    {
+                      std::string form = get_input_form_string<uint64_t>(*msgit, mfi.get_name(), mfi.get_typename());
+                      r->append_body(form.c_str());
+                      break;
+                    }
+
                   default:
                     r->append_body("%s (%s): <input type=\"text\" name=\"%s\" ><br>\n",
                           mfi.get_name(), mfi.get_typename(), mfi.get_name());
@@ -504,6 +547,17 @@ WebviewBlackBoardRequestProcessor::process_request(const fawkes::WebRequest *req
   } else {
     return NULL;
   }
+}
+
+template<typename T> std::string
+WebviewBlackBoardRequestProcessor::get_input_form_string(std::string msgit, const char * fieldname, std::string fieldtype)
+{
+  std::stringstream ss;
+  ss << fieldname << " (" << fieldtype << "):\n <input type=\"number\" min=\"" <<
+                 std::numeric_limits<T>::min() << "\" max=\"" << 
+                 std::numeric_limits<T>::max() << "\" step=\"1\" id=\"" << msgit <<
+                 "-" << fieldname << "\" name=\"" << fieldname << "\" pattern=\"\\d+\"><br>\n";
+  return ss.str();
 }
 
 
