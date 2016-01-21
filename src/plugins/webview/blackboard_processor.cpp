@@ -411,17 +411,26 @@ WebviewBlackBoardRequestProcessor::process_request(const fawkes::WebRequest *req
             r->append_body("<div class=\"msg-form-%s\" id=\"msg-form-%s\">\n<form action=\"%s/view/%s/send/%s\" method=\"post\">\n",
                         *msgit, *msgit, __baseurl, iuid.c_str(), *msgit);
             Message* ifmsg = iface->create_message(*msgit);
-              /*r->append_body("  <td rowspan=\"%d\">%s</td>\n </tr>\n",
-                             ifmsg->num_fields()+1,
-                            *msgit);*/
             for (InterfaceFieldIterator mfi = ifmsg->fields(); mfi != ifmsg->fields_end(); ++mfi) {
               //*r += " <tr>\n";
               if ( mfi.get_length() > 1 ) {
-                r->append_body("%s (%s [%zu]): <input type=\"text\" name=\"%s\" ><br>\n",
+                if (mfi.get_type() == IFT_STRING) {
+                  r->append_body("%s (%s [%zu]): <input type=\"text\" name=\"%s\" maxlength=\"%i\"><br>\n",
+                          mfi.get_name(), mfi.get_typename(),
+                          mfi.get_length(), mfi.get_name(), mfi.get_length());
+                } else {
+                  r->append_body("%s (%s [%zu]): <input type=\"text\" name=\"%s\" ><br>\n",
                           mfi.get_name(), mfi.get_typename(),
                           mfi.get_length(), mfi.get_name());
+                }
               } else {
                 switch (mfi.get_type()) {
+                  case IFT_DOUBLE:
+                  case IFT_FLOAT:
+                    r->append_body("%s (%s): <input type=\"text\" name=\"%s\" pattern=\"[0-9]*.[0-9]*\"><br>\n",
+                          mfi.get_name(), mfi.get_typename(),
+                          mfi.get_name());
+                    break;
                   case IFT_BOOL:
                     r->append_body("%s (%s):\n  <input type=\"radio\" name=\"%s\" value=\"true\" checked>true\n"
                           "  <input type=\"radio\" name=\"%s\" value=\"false\">false<br>\n",
