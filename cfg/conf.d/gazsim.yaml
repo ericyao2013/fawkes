@@ -64,6 +64,7 @@ gazsim:
     addresses:  []
     send-ports: []
     recv-ports: []
+    
   visualization:
     location-scripts: "model://label/materials/scripts"
     location-textures: "model://label/materials/textures"
@@ -74,3 +75,8 @@ gazsim:
       update-rate: 5.0 #in Hz
       label-size: 0.3
       label-height: 0.9
+      
+  pantilt:
+    if-name: "PanTilt RX28"
+    cfg-prefix: "/hardware/pantilt/ptus/RX28/"
+    gazebo-joint-name: ""

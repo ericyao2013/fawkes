@@ -42,7 +42,7 @@ clips-navgraph clips-agent clips-protobuf clips-tf: clips
 clips-navgraph navgraph-clusters: navgraph
 clips-webview: clips webview
 clips-ros: clips ros
-gazebo: robotino
+gazebo: robotino pantilt
 skiller: navgraph
 perception: mongodb
 navgraph-generator: navgraph amcl
