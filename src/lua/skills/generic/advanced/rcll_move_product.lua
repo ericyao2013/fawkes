@@ -134,7 +134,7 @@ end
 function ADD_OBJS:init()
   self.args["or_object"] = {
     add={ {name="mps", path="rcll.machine.xml"},
-          {name="prod", path="cylinder_red.kinbody.xml"}}}
+          {name="prod", path="rcll.prod.xml"}}}
 end
 
 function MOVE_OBJS:init()
