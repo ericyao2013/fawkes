@@ -2,6 +2,8 @@
 <Robot name="jaco_robot">
 
   <Robot prefix="arm_" file="jaco.kinbody.xml" name="jaco_arm">
+    <!-- min: 0.53
+         max: 0.63 -->
     <Translation> 0 0 0.56</Translation>
     <RotationAxis>0 0 1 270</RotationAxis>
   </Robot>
