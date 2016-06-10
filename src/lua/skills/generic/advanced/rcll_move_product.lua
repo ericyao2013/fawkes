@@ -49,6 +49,9 @@ local PARK_E3 = 3.14
 local PROD_POS_X = 0.25
 local PROD_POS_Y = 0.22
 local PROD_POS_Z = 0.91
+local DROP_POS_X = -0.1
+local DROP_POS_Y = 0.4
+local DROP_POS_Z = 0.1
 
 -- States
 fsm:define_states{ export_to=_M,
@@ -189,11 +192,13 @@ function MOVE_TO_MIDDLE:init()
 end
 
 function HOVER_GROUND:init()
-  self.args["jaco"] = {x=-0.1, y=0.4, z=0.2,e1=1.57,e2=3.14,e3=3.14}
+  self.args["jaco"] = {x=DROP_POS_X, y=DROP_POS_Y, z=DROP_POS_Z+0.12,
+                       e1=1.57,e2=3.14,e3=3.14}
 end
 
 function DROP_POS:init()
-  self.args["jaco"] = {x=-0.1, y=0.4, z=0.1,e1=1.57,e2=3.14,e3=3.14}
+  self.args["jaco"] = {x=DROP_POS_X, y=DROP_POS_Y, z=DROP_POS_Z+0.02,
+                       e1=1.57,e2=3.14,e3=3.14}
 end
 
 function DROP:init()
@@ -202,7 +207,8 @@ function DROP:init()
 end
 
 function POST_DROP:init()
-  self.args["jaco"] = {x=-0.1, y=0.4, z=0.2,e1=1.57,e2=3.14,e3=3.14}
+  self.args["jaco"] = {x=DROP_POS_X, y=DROP_POS_Y, z=DROP_POS_Z+0.12,
+                       e1=1.57,e2=3.14,e3=3.14}
 end
 
 function PARK:init()
