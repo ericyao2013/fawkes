@@ -1,0 +1,10 @@
+<KinBody name="MPSBody">
+  <Body name="Base" type="dynamic">
+    <Geom type="trimesh">
+        <Data>mps_cap.stl</Data>
+        <Render>mps_cap.stl</Render>
+    </Geom>
+    
+  </Body>
+  <translation>0 0 0</translation>
+</KinBody> 
