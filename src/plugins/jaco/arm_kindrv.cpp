@@ -107,7 +107,7 @@ JacoArmKindrv::final()
 
     case TARGET_READY:
       {
-        jaco_retract_mode_t mode = __arm->get_status();
+        jaco_retract_mode_t mode = __arm->get_status().retract;
         __final = (mode == MODE_READY_STANDBY);
 
         if( __final ) {
@@ -122,7 +122,7 @@ JacoArmKindrv::final()
 
     case TARGET_RETRACT:
       {
-        jaco_retract_mode_t mode = __arm->get_status();
+        jaco_retract_mode_t mode = __arm->get_status().retract;
         __final = (mode == MODE_RETRACT_STANDBY);
       }
       if( __final )
@@ -150,7 +150,7 @@ bool
 JacoArmKindrv::initialized()
 {
   if( !__initialized ) {
-    jaco_retract_mode_t mode = __arm->get_status();
+    jaco_retract_mode_t mode = __arm->get_status().retract;
     __initialized = (mode != MODE_NOINIT);
   }
 
@@ -284,7 +284,7 @@ JacoArmKindrv::goto_ready()
   __final = false;
 
   __arm->start_api_ctrl();
-  jaco_retract_mode_t mode = __arm->get_status();
+  jaco_retract_mode_t mode = __arm->get_status().retract;
   switch( mode ) {
     case MODE_RETRACT_TO_READY:
       //2 buttons needed
@@ -321,7 +321,7 @@ JacoArmKindrv::goto_retract()
   __final = false;
 
   __arm->start_api_ctrl();
-  jaco_retract_mode_t mode = __arm->get_status();
+  jaco_retract_mode_t mode = __arm->get_status().retract;
   switch( mode ) {
     case MODE_READY_TO_RETRACT:
       // 2 buttons needed
