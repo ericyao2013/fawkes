@@ -46,6 +46,9 @@ local PARK_Z = 0.9
 local PARK_E1 = 1.57
 local PARK_E2 = 3.14
 local PARK_E3 = 3.14
+local PROD_POS_X = 0.25
+local PROD_POS_Y = 0.22
+local PROD_POS_Z = 0.91
 
 -- States
 fsm:define_states{ export_to=_M,
@@ -136,8 +139,9 @@ end
 
 function MOVE_OBJS:init()
   self.args["or_object"] = {
-    move={{name="mps", x=0.25, y=0.3, z=0.0},
-          {name="prod", x=0.25,y=0.4,z=0.84}}}
+    move={{name="mps", x=0.55, y=0.6, z=0},
+          {name="prod", x=PROD_POS_X,y=PROD_POS_Y,z=PROD_POS_Z}
+          }}
 end
 
 function INIT_PARK:init()
@@ -150,19 +154,24 @@ function OPEN_GRIPPER:init()
 end
 
 function HOVER_BELT:init()
-  self.args["jaco"] = {x=0.25,y=0.4,z=0.90,e1=1.57,e2=3.14,e3=3.14}
+  self.args["jaco"] = {x=PROD_POS_X,y=PROD_POS_Y,z=PROD_POS_Z+0.1,
+                        e1=1.57,e2=3.14,e3=3.14}
 end
 
 function RELAXED_HOVER_BELT:init()
-  self.args["jaco"] = {x=0.25,y=0.4,z=0.95,e1=1.57,e2=3.14,e3=3.14}
+  self.args["jaco"] = {x=PROD_POS_X,y=PROD_POS_Y,z=PROD_POS_Z+0.2,
+                        e1=1.57,e2=3.14,e3=3.14}
+
 end
 
 function BELT_GRAB_POS:init()
-  self.args["jaco"] = {x=0.25,y=0.4,z=0.83,e1=1.57,e2=3.14,e3=3.14}
+  self.args["jaco"] = {x=PROD_POS_X,y=PROD_POS_Y,z=PROD_POS_Z+0.02,
+                        e1=1.57,e2=3.14,e3=3.14}
 end
 
 function RELAXED_BELT_GRAB_POS:init()
-  self.args["jaco"] = {x=0.25,y=0.4,z=0.87,e1=1.57,e2=3.14,e3=3.14}
+  self.args["jaco"] = {x=PROD_POS_X,y=PROD_POS_Y,z=PROD_POS_Z+0.05,
+                        e1=1.57,e2=3.14,e3=3.14}
 end
 
 function GRAB_FROM_BELT:init()
@@ -171,7 +180,8 @@ function GRAB_FROM_BELT:init()
 end
 
 function MOVE_UP_FROM_BELT:init()
-  self.args["jaco"] = {x=0.25, y=0.4, z=0.95,e1=1.57,e2=3.14,e3=3.14}
+  self.args["jaco"] = {x=PROD_POS_X,y=PROD_POS_Y,z=PROD_POS_Z+0.1,
+                        e1=1.57,e2=3.14,e3=3.14}
 end
 
 function MOVE_TO_MIDDLE:init()
