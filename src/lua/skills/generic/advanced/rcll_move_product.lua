@@ -78,8 +78,8 @@ fsm:define_states{ export_to=_M,
   -- further above the belt.
   -- If the grab fails, open the gripper and retract to parking.
   {"HOVER_BELT", SkillJumpState, final_to="BELT_GRAB_POS",
-    fail_to="RELAXED_HOVER_BELT", skills={{jaco}}},
-  {"RELAXED_HOVER_BELT", SkillJumpState, final_to="BELT_GRAB_POS",
+    fail_to="CLOSE_HOVER_BELT", skills={{jaco}}},
+  {"CLOSE_HOVER_BELT", SkillJumpState, final_to="BELT_GRAB_POS",
     fail_to="FAILED", skills={{jaco}}},
   {"BELT_GRAB_POS", SkillJumpState, final_to="GRAB_FROM_BELT",
     fail_to="RELAXED_BELT_GRAB_POS", skills={{jaco}}},
@@ -158,8 +158,8 @@ function HOVER_BELT:init()
                         e1=1.57,e2=3.14,e3=3.14}
 end
 
-function RELAXED_HOVER_BELT:init()
-  self.args["jaco"] = {x=PROD_POS_X,y=PROD_POS_Y,z=PROD_POS_Z+0.2,
+function CLOSE_HOVER_BELT:init()
+  self.args["jaco"] = {x=PROD_POS_X,y=PROD_POS_Y,z=PROD_POS_Z+0.05,
                         e1=1.57,e2=3.14,e3=3.14}
 
 end
