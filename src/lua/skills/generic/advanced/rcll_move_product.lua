@@ -88,8 +88,11 @@ fsm:define_states{ export_to=_M,
     fail_to="RELAXED_BELT_GRAB_POS", skills={{jaco}}},
   {"RELAXED_BELT_GRAB_POS", SkillJumpState, final_to="GRAB_FROM_BELT",
     fail_to="FAILED", skills={{jaco}}},
-  {"GRAB_FROM_BELT", SkillJumpState, final_to="MOVE_UP_FROM_BELT",
-    fail_to="RETRACT_OPEN_GRIPPER", skills={{jaco},{or_object}}},
+  {"GRAB_FROM_BELT", SkillJumpState, final_to="CHECK_GRAB",
+    fail_to="RETRACT_OPEN_GRIPPER", skills={{jaco}}},
+  {"CHECK_GRAB", JumpState},
+  {"ATTACH_PROD", SkillJumpState, final_to="MOVE_UP_FROM_BELT",
+    fail_to="RETRACT_OPEN_GRIPPER", skills={{or_object}}},
   {"MOVE_UP_FROM_BELT", SkillJumpState, final_to="MOVE_TO_MIDDLE",
     fail_to="FAILED", skills={{jaco}}},
   -- intermediate position which is above the drop position
@@ -116,8 +119,10 @@ fsm:define_states{ export_to=_M,
     skills={{jaco}}},
   {"RETRACT_TO_PARK", SkillJumpState, final_to="FAILED",
     fail_to="RETRACT_TO_HOME", skills={{jaco}}},
-  {"RETRACT_OPEN_GRIPPER", SkillJumpState, final_to="RETRACT_TO_PARK",
-    fail_to="RETRACT_TO_PARK", skills={{jaco}}},
+  {"RETRACT_OPEN_GRIPPER", SkillJumpState, final_to="RETRACT_MOVE_UP_FROM_MPS",
+    fail_to="RETRACT_MOVE_UP_FROM_MPS", skills={{jaco}}},
+  {"RETRACT_MOVE_UP_FROM_MPS", SkillJumpState, final_to="RETRACT_TO_PARK",
+    fail_to="FAILED", skills={{jaco}}},
   {"RETRACT_MOVE_UP", SkillJumpState, final_to="RETRACT_TO_PARK",
     fail_to="FAILED", skills={{jaco}}},
   {"RETRY_PARK_INTERMEDIATE", SkillJumpState, final_to="RETRY_PARK",
@@ -128,6 +133,8 @@ fsm:define_states{ export_to=_M,
 
 -- Transitions
 fsm:add_transitions{
+  {"CHECK_GRAB", "ATTACH_PROD", cond="self.success"},
+  {"CHECK_GRAB", "RETRACT_OPEN_GRIPPER", cond=true}
 }
 
 function START:init()
@@ -179,7 +186,20 @@ end
 
 function GRAB_FROM_BELT:init()
   self.args["jaco"] = {gripper="close"}
+end
+
+function ATTACH_PROD:init()
   self.args["or_object"] = {attach={"prod"}}
+end
+
+
+function CHECK_GRAB:init()
+  local f1, f2 = jacoarm:finger1(), jacoarm:finger2()
+  if f1 <= 30 or f1 >= 50 or f2 <= 30 or f2 >= 50 then
+    self.success = false
+  else
+    self.success = true
+  end
 end
 
 function MOVE_UP_FROM_BELT:init()
@@ -228,6 +248,11 @@ end
 
 function RETRACT_OPEN_GRIPPER:init()
   self.args["jaco"] = {gripper="open"}
+end
+
+function RETRACT_MOVE_UP_FROM_MPS:init()
+  self.args["jaco"] = {x=PROD_POS_X, y=PROD_POS_Y, z=PROD_POS_Z+0.1,
+                        e1=1.57,e2=3.14,e3=PICK_UP_E3}
 end
 
 function RETRACT_MOVE_UP:init()
