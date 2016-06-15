@@ -40,20 +40,21 @@ skillenv.skill_module(_M)
 
 -- Constants and variables
 --local TARGET_REACHED_DISTANCE = 0.8
-local PARK_X = 0.0
-local PARK_Y = 0.4
+local PARK_X = 0.2
+local PARK_Y = -0.1
 local PARK_Z = 1.0
 local PARK_E1 = 1.57
 local PARK_E2 = 3.14
-local PARK_E3 = 3.14
-local PROD_POS_X = 0.25
-local PROD_POS_Y = 0.20
-local PROD_POS_Z = 0.91
-local PICK_UP_E3 = 3.4
-local PICK_UP_Y_OFFSET = 0.02
-local DROP_POS_X = -0.1
-local DROP_POS_Y = 0.4
-local DROP_POS_Z = 0.3
+local PARK_E3 = 1.75
+local PROD_POS_X = 0.28
+local PROD_POS_Y = 0.15
+local PROD_POS_Z = 0.915
+local PICK_UP_E3 = 1.75
+local PICK_UP_X_OFFSET = -0.01
+local PICK_UP_Y_OFFSET = 0.00
+local DROP_POS_X = 0.2
+local DROP_POS_Y = -0.2
+local DROP_POS_Z = 0.1
 
 -- States
 fsm:define_states{ export_to=_M,
@@ -96,6 +97,8 @@ fsm:define_states{ export_to=_M,
   {"ATTACH_PROD", SkillJumpState, final_to="MOVE_UP_FROM_BELT",
     fail_to="RETRACT_OPEN_GRIPPER", skills={{or_object}}},
   {"MOVE_UP_FROM_BELT", SkillJumpState, final_to="MOVE_TO_MIDDLE",
+    fail_to="CLOSE_MOVE_UP_FROM_BELT", skills={{jaco}}},
+  {"CLOSE_MOVE_UP_FROM_BELT", SkillJumpState, final_to="MOVE_TO_MIDDLE",
     fail_to="FAILED", skills={{jaco}}},
   -- intermediate position which is above the drop position
   {"MOVE_TO_MIDDLE", SkillJumpState, final_to="HOVER_GROUND",
@@ -146,12 +149,13 @@ end
 function ADD_OBJS:init()
   self.args["or_object"] = {
     add={ {name="mps", path="rcll.machine.xml"},
-          {name="prod", path="rcll.prod.xml"}}}
+          {name="prod", path="rcll.prod.xml"}
+          }}
 end
 
 function MOVE_OBJS:init()
   self.args["or_object"] = {
-    move={{name="mps", x=0.55, y=0.6, z=0},
+    move={{name="mps", x=-0.10, y=0.47, z=0},
           {name="prod", x=PROD_POS_X,y=PROD_POS_Y,z=PROD_POS_Z}
           }}
 end
@@ -166,23 +170,23 @@ function OPEN_GRIPPER:init()
 end
 
 function HOVER_BELT:init()
-  self.args["jaco"] = {x=PROD_POS_X,y=PROD_POS_Y+PICK_UP_Y_OFFSET,z=PROD_POS_Z+0.1,
+  self.args["jaco"] = {x=PROD_POS_X+PICK_UP_X_OFFSET,y=PROD_POS_Y+PICK_UP_Y_OFFSET,z=PROD_POS_Z+0.1,
                         e1=1.57,e2=3.14,e3=PICK_UP_E3}
 end
 
 function CLOSE_HOVER_BELT:init()
-  self.args["jaco"] = {x=PROD_POS_X,y=PROD_POS_Y+PICK_UP_Y_OFFSET,z=PROD_POS_Z+0.05,
+  self.args["jaco"] = {x=PROD_POS_X+PICK_UP_X_OFFSET,y=PROD_POS_Y+PICK_UP_Y_OFFSET,z=PROD_POS_Z+0.05,
                         e1=1.57,e2=3.14,e3=PICK_UP_E3}
 
 end
 
 function BELT_GRAB_POS:init()
-  self.args["jaco"] = {x=PROD_POS_X,y=PROD_POS_Y+PICK_UP_Y_OFFSET,z=PROD_POS_Z+0.02,
+  self.args["jaco"] = {x=PROD_POS_X+PICK_UP_X_OFFSET,y=PROD_POS_Y+PICK_UP_Y_OFFSET,z=PROD_POS_Z+0.02,
                         e1=1.57,e2=3.14,e3=PICK_UP_E3}
 end
 
 function RELAXED_BELT_GRAB_POS:init()
-  self.args["jaco"] = {x=PROD_POS_X,y=PROD_POS_Y+PICK_UP_Y_OFFSET,z=PROD_POS_Z+0.05,
+  self.args["jaco"] = {x=PROD_POS_X+PICK_UP_X_OFFSET,y=PROD_POS_Y+PICK_UP_Y_OFFSET,z=PROD_POS_Z+0.05,
                         e1=1.57,e2=3.14,e3=PICK_UP_E3}
 end
 
@@ -205,12 +209,17 @@ function CHECK_GRAB:init()
 end
 
 function MOVE_UP_FROM_BELT:init()
-  self.args["jaco"] = {x=PROD_POS_X,y=PROD_POS_Y+PICK_UP_Y_OFFSET,z=PROD_POS_Z+0.2,
+  self.args["jaco"] = {x=PROD_POS_X+PICK_UP_X_OFFSET,y=PROD_POS_Y+PICK_UP_Y_OFFSET,z=PROD_POS_Z+0.1,
+                        e1=1.57,e2=3.14,e3=PICK_UP_E3}
+end
+
+function MOVE_UP_FROM_BELT:init()
+  self.args["jaco"] = {x=PROD_POS_X+PICK_UP_X_OFFSET,y=PROD_POS_Y+PICK_UP_Y_OFFSET,z=PROD_POS_Z+0.05,
                         e1=1.57,e2=3.14,e3=PICK_UP_E3}
 end
 
 function MOVE_TO_MIDDLE:init()
-  self.args["jaco"] = {x=-0.1, y=0.4, z=0.95,e1=1.57,e2=3.14,e3=PICK_UP_E3}
+  self.args["jaco"] = {x=PARK_X, y=PARK_Y, z=PARK_Z,e1=1.57,e2=3.14,e3=PICK_UP_E3}
 end
 
 function HOVER_GROUND:init()

@@ -7,4 +7,5 @@
     
   </Body>
   <translation>0 0 0</translation>
+  <RotationAxis>0 0 1 90</RotationAxis>
 </KinBody> 

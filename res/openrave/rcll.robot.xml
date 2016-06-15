@@ -4,8 +4,8 @@
   <Robot prefix="arm_" file="jaco.kinbody.xml" name="jaco_arm">
     <!-- min: 0.53
          max: 0.63 -->
-    <Translation> 0 0 0.56</Translation>
-    <RotationAxis>0 0 1 270</RotationAxis>
+    <Translation> 0 0 0.59</Translation>
+    <RotationAxis>0 0 1 90</RotationAxis>
   </Robot>
 
 
@@ -22,9 +22,9 @@
   <KinBody name="body">
     <Body name="main_body" type="dynamic">
       <Geom type="box">
-        <Extents>0.2 0.1 0.28</Extents>
+        <Extents>0.2 0.1 0.20</Extents>
       </Geom>
-      <Translation>0 0 0.28</Translation>
+      <Translation>0 0 0.20</Translation>
     </Body>
     <!--
     <Body name="mount" type="dynamic">
