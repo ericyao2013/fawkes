@@ -187,7 +187,7 @@ function RELAXED_BELT_GRAB_POS:init()
 end
 
 function GRAB_FROM_BELT:init()
-  self.args["jaco"] = {gripper="close"}
+  self.args["jaco"] = {gripper={f1=60,f2=60,f3=20}}
 end
 
 function ATTACH_PROD:init()
