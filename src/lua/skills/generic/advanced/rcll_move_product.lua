@@ -61,8 +61,10 @@ fsm:define_states{ export_to=_M,
 
   {"START", SkillJumpState, final_to="ADD_OBJS", fail_to="FAILED",
     skills={{or_object}}},
-  -- add MPS and the product object
-  {"ADD_OBJS", SkillJumpState, final_to="MOVE_OBJS", fail_to="FAILED",
+  -- add MPS, the product object, and separators
+  {"ADD_OBJS", SkillJumpState, final_to="ROTATE_OBJS", fail_to="FAILED",
+    skills={{or_object}}},
+  {"ROTATE_OBJS", SkillJumpState, final_to="MOVE_OBJS", fail_to="FAILED",
     skills={{or_object}}},
   -- stack the product on top of the MPS belt
   {"MOVE_OBJS", SkillJumpState, final_to="INIT_PARK", fail_to="FAILED",
@@ -149,14 +151,27 @@ end
 function ADD_OBJS:init()
   self.args["or_object"] = {
     add={ {name="mps", path="rcll.machine.xml"},
-          {name="prod", path="rcll.prod.xml"}
+          {name="prod", path="rcll.prod.xml"},
+          {name="separator1", path="separator.kinbody.xml"},
+          {name="separator2", path="separator.kinbody.xml"},
+          {name="separator3", path="separator.kinbody.xml"}
           }}
+end
+
+function ROTATE_OBJS:init()
+  self.args["or_object"] = {
+    rotate={--{name="separator1",x=0,y=0,z=1.57}
+            {name="separator2",x=0,y=0,z=1.57}
+           }}
 end
 
 function MOVE_OBJS:init()
   self.args["or_object"] = {
     move={{name="mps", x=-0.10, y=0.47, z=0},
-          {name="prod", x=PROD_POS_X,y=PROD_POS_Y,z=PROD_POS_Z}
+          {name="prod", x=PROD_POS_X,y=PROD_POS_Y,z=PROD_POS_Z},
+          {name="separator1",x=0.0,y=-0.4,z=0.3},
+          {name="separator2",x=-0.2,y=0,z=0.3},
+          {name="separator3",x=0,y=0.5,z=0.3}
           }}
 end
 
