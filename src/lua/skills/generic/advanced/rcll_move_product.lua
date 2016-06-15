@@ -54,7 +54,7 @@ local PICK_UP_X_OFFSET = -0.01
 local PICK_UP_Y_OFFSET = 0.00
 local DROP_POS_X = 0.2
 local DROP_POS_Y = -0.2
-local DROP_POS_Z = 0.1
+local DROP_POS_Z = 0.11
 
 -- States
 fsm:define_states{ export_to=_M,
@@ -154,7 +154,8 @@ function ADD_OBJS:init()
           {name="prod", path="rcll.prod.xml"},
           {name="separator1", path="separator.kinbody.xml"},
           {name="separator2", path="separator.kinbody.xml"},
-          {name="separator3", path="separator.kinbody.xml"}
+          {name="separator3", path="separator.kinbody.xml"},
+          {name="dropbox", path="dropbox.kinbody.xml"}
           }}
 end
 
@@ -171,7 +172,8 @@ function MOVE_OBJS:init()
           {name="prod", x=PROD_POS_X,y=PROD_POS_Y,z=PROD_POS_Z},
           {name="separator1",x=0.0,y=-0.4,z=0.3},
           {name="separator2",x=-0.2,y=0,z=0.3},
-          {name="separator3",x=0,y=0.5,z=0.3}
+          {name="separator3",x=0,y=0.5,z=0.3},
+          {name="dropbox", x=0.2,y=-0.2,z=0}
           }}
 end
 
