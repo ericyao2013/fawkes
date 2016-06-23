@@ -1,0 +1,13 @@
+<KinBody name="Dropbox">
+
+  <Body name="DropboxBody" type="dynamic">
+    <Mass type="mimicgeom">
+      <density>1000</density>
+    </Mass>
+    <Geom type="box">
+      <extents>0.1 0.045 0.045</extents>
+      <translation>0 0 0.045</translation>
+      <diffusecolor>1.0 0.94 0.66</diffusecolor>
+    </Geom>
+  </Body>
+</KinBody>
