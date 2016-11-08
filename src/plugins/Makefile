@@ -26,7 +26,7 @@ SUBDIRS	= bbsync bblogger webview ttmainloop rrd rrdweb \
 	  static_transforms navgraph navgraph-clusters navgraph-generator colli \
 	  clips clips-agent clips-protobuf clips-webview clips-navgraph clips-ros \
 	  clips-tf openprs openprs-agent eclipse-clp \
-	  mongodb mongodb_log \
+	  mongodb mongodb_log robot-memory clips-robot-memory pddl-robot-memory \
 	  openni refboxcomm ros player xmlrpc gossip \
 	  robot_state_publisher gazebo dynamixel navgraph-interactive
 
@@ -38,10 +38,12 @@ katana jaco: openrave
 amcl colli navgraph perception robotino: ros
 mongodb_log: mongodb
 mongodb: rrd
-clips-navgraph clips-agent clips-protobuf clips-tf: clips
+clips-navgraph clips-agent clips-protobuf clips-tf clips-robot-memory: clips
 clips-navgraph navgraph-clusters: navgraph
 clips-webview: clips webview
 clips-ros: clips ros
+clips-robot-memory: robot-memory
+pddl-robot-memory: robot-memory
 gazebo: robotino
 skiller: navgraph
 perception: mongodb
