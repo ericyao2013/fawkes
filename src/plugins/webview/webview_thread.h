@@ -125,6 +125,7 @@ class WebviewThread
   bool         __cfg_use_basic_auth;
   std::string  __cfg_basic_auth_realm;
   std::string  __cfg_access_log;
+  bool         __cfg_bb_enable_msgs;
 
   fawkes::CacheLogger     __cache_logger;
   fawkes::NetworkService *__webview_service;

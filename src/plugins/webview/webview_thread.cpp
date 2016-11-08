@@ -153,6 +153,11 @@ WebviewThread::init()
     __cfg_access_log = config->get_string("/webview/access_log");
   } catch (Exception &e) {}
 
+  __cfg_bb_enable_msgs = false;
+  try{
+    __cfg_bb_enable_msgs = config->get_bool("/webview/bb_enable_msgs");
+  } catch (Exception &e) {}
+
 
   __cache_logger.clear();
 
@@ -211,7 +216,7 @@ WebviewThread::init()
     static_dirs_cstr[i] = static_dirs[i].c_str();
   }
   __static_processor     = new WebviewStaticRequestProcessor(STATIC_URL_PREFIX, static_dirs_cstr, logger);
-  __blackboard_processor = new WebviewBlackBoardRequestProcessor(BLACKBOARD_URL_PREFIX, blackboard);
+  __blackboard_processor = new WebviewBlackBoardRequestProcessor(BLACKBOARD_URL_PREFIX, blackboard, __cfg_bb_enable_msgs);
   __plugins_processor    = new WebviewPluginsRequestProcessor(PLUGINS_URL_PREFIX, plugin_manager);
 #ifdef HAVE_TF
   __tf_processor         = new WebviewTfRequestProcessor(TF_URL_PREFIX, tf_listener);

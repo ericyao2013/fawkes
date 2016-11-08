@@ -37,12 +37,14 @@ class WebviewBlackBoardRequestProcessor : public fawkes::WebRequestProcessor
 {
  public:
   WebviewBlackBoardRequestProcessor(const char *baseurl,
-				fawkes::BlackBoard *blackboard);
+				fawkes::BlackBoard *blackboard,
+				bool enable_msgs = false);
   virtual ~WebviewBlackBoardRequestProcessor();
 
   virtual fawkes::WebReply * process_request(const fawkes::WebRequest *request);
 
  private:
+  template<typename T> std::string get_input_form_string(std::string msgit, const char* fieldname, std::string fieldtype);
 #if defined(HAVE_GRAPHVIZ) && ((defined(__GNUC__) && (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 5))) || defined(__clang__))
   std::string generate_graph(std::string for_owner = "");
 #endif
@@ -51,6 +53,7 @@ class WebviewBlackBoardRequestProcessor : public fawkes::WebRequestProcessor
   char *__baseurl;
   size_t __baseurl_len;
   fawkes::BlackBoard *__blackboard;
+  bool __enable_msgs;
 
   std::map<std::string, fawkes::Interface *> __interfaces;
   std::map<std::string, fawkes::Interface *>::iterator __ifi;

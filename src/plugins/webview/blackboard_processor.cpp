@@ -25,16 +25,20 @@
 #include <webview/file_reply.h>
 #include <webview/error_reply.h>
 
+#include <core/exceptions/software.h>
+
 #include <blackboard/blackboard.h>
 #include <interface/interface.h>
 #include <interface/field_iterator.h>
 #include <interface/interface_info.h>
 #include <utils/time/time.h>
 #include <utils/misc/string_split.h>
+#include <utils/misc/string_conversions.h>
 
 #include <string>
 #include <cstring>
 #include <cstdlib>
+#include <limits>
 
 #include <set>
 #include <sstream>
@@ -56,13 +60,15 @@ using namespace fawkes;
 /** Constructor.
  * @param baseurl Base URL where processor is mounted
  * @param blackboard BlackBoard instance
+ * @param enable_msgs whether to allow sending msgs via webview
  */
 WebviewBlackBoardRequestProcessor::WebviewBlackBoardRequestProcessor(const char *baseurl,
-								     BlackBoard *blackboard)
+								     BlackBoard *blackboard, bool enable_msgs)
 {
   __baseurl     = strdup(baseurl);
   __baseurl_len = strlen(__baseurl);
   __blackboard  = blackboard;
+  __enable_msgs = enable_msgs;
 }
 
 
@@ -118,6 +124,10 @@ WebviewBlackBoardRequestProcessor::process_request(const fawkes::WebRequest *req
       WebPageReply *r = new WebPageReply("BlackBoard");
       r->set_html_header("  <link type=\"text/css\" href=\""
 			 "/static/css/jqtheme/jquery-ui.custom.css\" rel=\"stylesheet\" />\n"
+                   "  <script type=\"text/javascript\" src=\"/static/js/"
+                   "jquery.min.js\"></script>\n"
+                   "  <script type=\"text/javascript\" src=\"/static/js/"
+                   "jquery-ui.custom.min.js\"></script>\n"
 			 "  <link type=\"text/css\" href=\""
 			 "/static/css/blackboard.css\" rel=\"stylesheet\" />\n");
 
@@ -161,8 +171,29 @@ WebviewBlackBoardRequestProcessor::process_request(const fawkes::WebRequest *req
 	*r += "<p><b>No interfaces found.</b></p>\n";
       }
 
+      std::list<const char *> all_msgs; // needed for collapsible msg forms
       if (subpath.find("/view/") == 0) {
-	std::string iuid = subpath.substr(subpath.find_first_not_of("/", std::string("/view/").length()));
+        std::string iuid = "";
+        try {
+          std::size_t tmp = subpath.find_first_not_of("/", std::string("/view/").length());
+          if (tmp == std::string::npos) { throw IllegalArgumentException("String ended after \"/view/\"."); }
+          iuid = subpath.substr(tmp);
+        } catch (Exception &e) {
+          return new WebErrorPageReply(WebReply::HTTP_NOT_FOUND,
+                           "Could not parse interface id: %s<br>\n<a href=\"%s\">Back to BlackBoard</a>", e.what(), __baseurl);
+        } catch (std::exception &e) {
+          return new WebErrorPageReply(WebReply::HTTP_NOT_FOUND,
+                           "Could not parse interface id: %s<br>\n<a href=\"%s\">Back to BlackBoard</a>", e.what(), __baseurl);
+        }
+        std::string message_type;
+        bool send = false;
+        if (iuid.find("/send/") != std::string::npos) {
+          std::string::size_type slash_pos1 = iuid.find("/");
+          std::string::size_type slash_pos2 = iuid.find("/", slash_pos1+1);
+          message_type = iuid.substr(slash_pos2+1,iuid.length());
+          iuid = iuid.substr(0,slash_pos1);
+          send = true;
+      }
 	std::string iftype = iuid.substr(0, iuid.find("::"));
 	std::string ifname = iuid.substr(iuid.find("::") + 2);
 
@@ -178,6 +209,110 @@ WebviewBlackBoardRequestProcessor::process_request(const fawkes::WebRequest *req
 	if (__interfaces.find(iuid) != __interfaces.end()) {
 	  Interface *iface = __interfaces[iuid];
 	  iface->read();
+
+        if(send){
+          // handle send message request
+          Message* msg_to_send;
+          try {
+            msg_to_send = iface->create_message(message_type.c_str());
+          } catch (Exception &e) {
+            return new WebErrorPageReply(WebReply::HTTP_NOT_FOUND,
+                           "Could not parse message name: %s<br>\n <a href=\"%s/view/%s::%s\">Back to %s::%s</a>", e.what(), __baseurl, iftype.c_str(), ifname.c_str(), iftype.c_str(), ifname.c_str());
+          }
+          bool no_errors = true;
+          if (!iface->has_writer()){
+            r->append_body("<font color=\"red\">Error: Cannot send message because the interface has no writer!</font>\n");
+            no_errors = false;
+          }else{
+            for (InterfaceFieldIterator mfi = msg_to_send->fields(); mfi != msg_to_send->fields_end(); ++mfi) {
+              if(!request->post_value(mfi.get_name()).empty()){
+
+                if (mfi.get_length() > 1 && mfi.get_type() != IFT_STRING){
+                  r->append_body("<font color=\"red\">Error: Type array is currently not supported by webview send message functionality.</font><br>\n");
+                  no_errors = false;
+                } else {
+                  switch(mfi.get_type()){
+                    case IFT_STRING: {
+                        std::string str = request->post_value(mfi.get_name());
+                        if (str.length() > mfi.get_length()) {
+                          r->append_body("<font color=\"red\">Error: The entered string is longer than %i! </font><br>\n", mfi.get_length());
+                          no_errors = false;
+                        } else {
+                          mfi.set_string(str.c_str());
+                          printf("received string, it is at most of length: %lu<br>\n", mfi.get_length());
+                        }
+                      break;
+                    }
+                    case IFT_ENUM:
+                      mfi.set_enum_string(request->post_value(mfi.get_name()).c_str());
+                      break;
+                    case IFT_BOOL:
+                      mfi.set_bool( (strcmp("true",request->post_value(mfi.get_name()).c_str()) != 0) ? true : false);
+                      break;
+                    case IFT_INT8: {
+                      int i = StringConversions::to_int(request->post_value(mfi.get_name()));
+                      mfi.set_int8(i);
+                      break;
+                    }
+                    case IFT_UINT8: {
+                      unsigned int i = StringConversions::to_uint(request->post_value(mfi.get_name()));
+                      mfi.set_uint8(i);
+                      break;
+                    }
+                    case IFT_INT16: {
+                      int i = StringConversions::to_int(request->post_value(mfi.get_name()));
+                      mfi.set_int16(i);
+                      break;
+                    }
+                    case IFT_UINT16: {
+                      unsigned int i = StringConversions::to_uint(request->post_value(mfi.get_name()));
+                      mfi.set_uint16(i);
+                      break;
+                    }
+                    case IFT_INT32: {
+                      int i = StringConversions::to_int(request->post_value(mfi.get_name()));
+                      mfi.set_int32(i);
+                      break;
+                    }
+                    case IFT_UINT32: {
+                      unsigned int i = StringConversions::to_uint(request->post_value(mfi.get_name()));
+                      mfi.set_uint32(i);
+                      break;
+                    }
+                    case IFT_INT64: {
+                      int i = StringConversions::to_int(request->post_value(mfi.get_name()));
+                      mfi.set_int64(i);
+                      break;
+                    }
+                    case IFT_UINT64: {
+                      unsigned int i = StringConversions::to_uint(request->post_value(mfi.get_name()));
+                      mfi.set_uint64(i);
+                      break;
+                    }
+                    case IFT_FLOAT: {
+                      float f = StringConversions::to_float(request->post_value(mfi.get_name()));
+                      mfi.set_float(f);
+                      break;
+                    }
+                    case IFT_DOUBLE: {
+                      double d = StringConversions::to_double(request->post_value(mfi.get_name()));
+                      mfi.set_float(d);
+                      break;
+                    }
+                    default:
+                      r->append_body("<font color=\"red\">Error: Type %s is currently not supported by webview send message functionality.</font>\n", mfi.get_typename());
+                      no_errors = false;
+                  }
+                  r->append_body("Received value %s for the field \"%s\".\n",request->post_value(mfi.get_name()).c_str(), mfi.get_name());
+                }
+              }
+            }
+          }
+          if (no_errors){
+            unsigned int msg_id = iface->msgq_enqueue(msg_to_send);
+             r->append_body("Sent Message of type %s with id %d\n",message_type.c_str(), msg_id);
+          }
+        }
 
 	  /*
 	   *r += "<script type=\"text/javascript\">\n"
@@ -261,8 +396,119 @@ WebviewBlackBoardRequestProcessor::process_request(const fawkes::WebRequest *req
 	    *r += " </tr>\n";
 	  }
 	  r->append_body("</table>\n");
+
+        // Show possible messages
+        std::list<const char *> msg_types = iface->get_message_types();
+        if (!msg_types.empty() && __enable_msgs){
+          *r +="<h3>Messages</h3>\n";
+
+          /*r->append_body("<table>\n"
+                   " <tr>\n"
+                   "  <th>Name</th><th>Field Name</th><th>Type</th><th>Value</th>\n"
+                   " </tr>\n");
+        */
+          for (std::list<const char *>::iterator msgit = msg_types.begin(); msgit != msg_types.end(); ++msgit) {
+            all_msgs.push_front(*msgit);
+            r->append_body("<div class=\"msg-name-%s\"><h5 class=\"close\">%s</h5></div>\n", *msgit, *msgit);
+            r->append_body("<div class=\"msg-form-%s\" id=\"msg-form-%s\">\n<form action=\"%s/view/%s/send/%s\" method=\"post\">\n",
+                        *msgit, *msgit, __baseurl, iuid.c_str(), *msgit);
+            Message* ifmsg = iface->create_message(*msgit);
+            for (InterfaceFieldIterator mfi = ifmsg->fields(); mfi != ifmsg->fields_end(); ++mfi) {
+              //*r += " <tr>\n";
+              if ( mfi.get_length() > 1 ) {
+                if (mfi.get_type() == IFT_STRING) {
+                  r->append_body("%s (%s [%zu]): <input type=\"text\" name=\"%s\" maxlength=\"%i\"><br>\n",
+                          mfi.get_name(), mfi.get_typename(),
+                          mfi.get_length(), mfi.get_name(), mfi.get_length());
+                } else {
+                  r->append_body("%s (%s [%zu]): <input type=\"text\" name=\"%s\" ><br>\n",
+                          mfi.get_name(), mfi.get_typename(),
+                          mfi.get_length(), mfi.get_name());
+                }
+              } else {
+                switch (mfi.get_type()) {
+                  case IFT_DOUBLE:
+                  case IFT_FLOAT:
+                    r->append_body("%s (%s): <input type=\"text\" name=\"%s\" pattern=\"[0-9]*.[0-9]*\"><br>\n",
+                          mfi.get_name(), mfi.get_typename(),
+                          mfi.get_name());
+                    break;
+                  case IFT_BOOL:
+                    r->append_body("%s (%s):\n  <input type=\"radio\" name=\"%s\" value=\"true\" checked>true\n"
+                          "  <input type=\"radio\" name=\"%s\" value=\"false\">false<br>\n",
+                          mfi.get_name(), mfi.get_typename(), mfi.get_name(), mfi.get_name());
+                    break;
+                  case IFT_ENUM:
+                    {
+                      std::list<const char*> enum_values = mfi.get_enum_valuenames();
+                      r->append_body("%s:<br>\n", mfi.get_name());
+                      for (std::list<const char*>::iterator enum_it = enum_values.begin(); enum_it != enum_values.end(); ++enum_it) { // TODO improve formatting
+                        r->append_body("  <input type=\"radio\" name=\"%s\" value=\"%s\">%s<br>\n",
+                            mfi.get_name(), *enum_it, *enum_it);
+                      }
+                      break;
+                    }
+                  case IFT_INT8:
+                    {
+                      std::string form = get_input_form_string<int8_t>(*msgit, mfi.get_name(), mfi.get_typename());
+                      r->append_body(form.c_str());
+                      break;
+                    }
+                  case IFT_BYTE:
+                  case IFT_UINT8:
+                    {
+                      std::string form = get_input_form_string<uint8_t>(*msgit, mfi.get_name(), mfi.get_typename());
+                      r->append_body(form.c_str());
+                      break;
+                    }
+                  case IFT_INT16:
+                    {
+                      std::string form = get_input_form_string<int16_t>(*msgit, mfi.get_name(), mfi.get_typename());
+                      r->append_body(form.c_str());
+                      break;
+                    }
+                  case IFT_UINT16:
+                    {
+                      std::string form = get_input_form_string<uint16_t>(*msgit, mfi.get_name(), mfi.get_typename());
+                      r->append_body(form.c_str());
+                      break;
+                    }
+                  case IFT_INT32:
+                    {
+                      std::string form = get_input_form_string<int32_t>(*msgit, mfi.get_name(), mfi.get_typename());
+                      r->append_body(form.c_str());
+                      break;
+                    }
+                  case IFT_UINT32:
+                    {
+                      std::string form = get_input_form_string<uint32_t>(*msgit, mfi.get_name(), mfi.get_typename());
+                      r->append_body(form.c_str());
+                      break;
+                    }
+                  case IFT_INT64:
+                    {
+                      std::string form = get_input_form_string<int64_t>(*msgit, mfi.get_name(), mfi.get_typename());
+                      r->append_body(form.c_str());
+                      break;
+                    }
+                  case IFT_UINT64:
+                    {
+                      std::string form = get_input_form_string<uint64_t>(*msgit, mfi.get_name(), mfi.get_typename());
+                      r->append_body(form.c_str());
+                      break;
+                    }
+
+                  default:
+                    r->append_body("%s (%s): <input type=\"text\" name=\"%s\" ><br>\n",
+                          mfi.get_name(), mfi.get_typename(), mfi.get_name());
+                }
+              }
+            }
+            *r += "  <input type=\"submit\" value=\"Send\" />\n</form>\n</div>\n";
+          }
+        }
 	  r->append_body("<p><a href=\"%s\">Clear detailed</a></p>\n", __baseurl);
-	}
+      }
       } else if (subpath.find("/graph") == 0) {
 	std::string graph_baseurl("/graph/");
 	std::string graph_node =
@@ -298,6 +544,13 @@ WebviewBlackBoardRequestProcessor::process_request(const fawkes::WebRequest *req
 	  r->append_body("<p><a href=\"%s/graph\">Full Graph</a></p>\n\n", __baseurl);
 	}
       }
+      r->append_body("<script>\n");
+      for (std::list<const char *>::iterator it = all_msgs.begin(); it != all_msgs.end(); ++it){
+        r->append_body( "  $('.msg-name-%s').click(function(){\n    $('.msg-form-%s').slideToggle('slow');\n  });\n", *it, *it);
+        //r->append_body("  $('.msg-form-%s').style.display=\"none\";", *it);
+        r->append_body("  document.getElementById(\"msg-form-%s\").style.display=\"none\";", *it);
+      }
+      r->append_body("\n</script>");
       return r;
     }
 
@@ -305,6 +558,18 @@ WebviewBlackBoardRequestProcessor::process_request(const fawkes::WebRequest *req
     return NULL;
   }
 }
+
+template<typename T> std::string
+WebviewBlackBoardRequestProcessor::get_input_form_string(std::string msgit, const char * fieldname, std::string fieldtype)
+{
+  std::stringstream ss;
+  ss << fieldname << " (" << fieldtype << "):\n <input type=\"number\" min=\"" <<
+                 std::numeric_limits<T>::min() << "\" max=\"" << 
+                 std::numeric_limits<T>::max() << "\" step=\"1\" id=\"" << msgit <<
+                 "-" << fieldname << "\" name=\"" << fieldname << "\" pattern=\"\\d+\"><br>\n";
+  return ss.str();
+}
+
 
 #if defined(HAVE_GRAPHVIZ) && ((defined(__GNUC__) && (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 5))) || defined(__clang__))
 std::string

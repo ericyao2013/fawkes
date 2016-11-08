@@ -254,6 +254,18 @@ InterfaceFieldIterator::is_enum() const
   }
 }
 
+/** Return the list of all enum value names.
+ * @return a list of the possible enum values.
+ */
+std::list<const char*>
+InterfaceFieldIterator::get_enum_valuenames() const
+{
+  std::list<const char*> enums;
+  for (interface_enum_map_t::const_iterator enum_it = __infol->enum_map->begin(); enum_it != __infol->enum_map->end(); ++enum_it) { // TODO
+    enums.push_back(enum_it->second.c_str());
+  }
+  return enums;
+}
 
 /** Get name of current field.
  * @return field name
