@@ -28,7 +28,8 @@ SUBDIRS	= bbsync bblogger webview ttmainloop rrd rrdweb \
 	  clips-tf openprs openprs-agent eclipse-clp \
 	  mongodb mongodb_log \
 	  openni refboxcomm ros player xmlrpc gossip \
-	  robot_state_publisher gazebo dynamixel navgraph-interactive
+	  robot_state_publisher gazebo dynamixel navgraph-interactive \
+	  tag_vision
 
 include $(BUILDSYSDIR)/rules.mk
 
