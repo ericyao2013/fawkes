@@ -86,7 +86,7 @@ class RobotMemory
     template<typename T>
     EventTrigger* register_trigger(std::string query_str, std::string collection, void(T::*callback)(mongo::BSONObj), T *_obj)
     {
-      return register_trigger(mongo::fromjson(query_str), collection, callback);
+      return register_trigger(mongo::fromjson(query_str), collection, callback, _obj);
     }
     void remove_trigger(EventTrigger* trigger);
 
@@ -100,7 +100,7 @@ class RobotMemory
      * @return Computable Object pointer used for removing it
      */
     template<typename T>
-    Computable* register_computable(mongo::Query query_to_compute, std::string collection, std::list<mongo::BSONObj>(T::*compute_func)(mongo::BSONObj), T *obj)
+    Computable* register_computable(mongo::Query query_to_compute, std::string collection, std::list<mongo::BSONObj>(T::*compute_func)(mongo::BSONObj, std::string), T *obj)
     {
       return computables_manager_->register_computable(query_to_compute, collection, compute_func, obj);
     }

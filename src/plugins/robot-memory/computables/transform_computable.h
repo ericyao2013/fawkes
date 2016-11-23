@@ -1,8 +1,8 @@
 /***************************************************************************
- *  blackboard_computable.h - Computable providing blackboard access
+ *  transform_computable.h - Computable for doing transforms
  *    
  *
- *  Created: 1:22:31 PM 2016
+ *  Created: 4:11:27 PM 2016
  *  Copyright  2016  Frederik Zwilling
  ****************************************************************************/
 
@@ -19,32 +19,30 @@
  *  Read the full text in the LICENSE.GPL file in the doc directory.
  */
 
-#ifndef FAWKES_SRC_PLUGINS_ROBOT_MEMORY_COMPUTABLES_BLACKBOARD_COMPUTABLE_H_
-#define FAWKES_SRC_PLUGINS_ROBOT_MEMORY_COMPUTABLES_BLACKBOARD_COMPUTABLE_H_
+#ifndef FAWKES_SRC_PLUGINS_ROBOT_MEMORY_COMPUTABLES_TRANSFORM_COMPUTABLE_H_
+#define FAWKES_SRC_PLUGINS_ROBOT_MEMORY_COMPUTABLES_TRANSFORM_COMPUTABLE_H_
 
 #include "../robot_memory.h"
-#include <blackboard/blackboard.h>
 #include <aspect/logging.h>
+#include <aspect/tf.h>
+#include <config/config.h>
 
-/** @class BlackboardComputable  blackboard_computable.h
- *
- * @author Frederik Zwilling
- */
-class BlackboardComputable
+
+class TransformComputable
 {
   public:
-    BlackboardComputable(RobotMemory* robot_memory, fawkes::BlackBoard* blackboard, fawkes::Logger* logger);
-    virtual ~BlackboardComputable();
+    TransformComputable(RobotMemory* robot_memory, fawkes::tf::Transformer* tf, fawkes::Logger* logger, fawkes::Configuration* config);
+    virtual ~TransformComputable();
 
   private:
-    std::list<mongo::BSONObj> compute_interfaces(mongo::BSONObj query, std::string collection);
+    std::list<mongo::BSONObj> compute_transform(mongo::BSONObj query, std::string collection);
 
     RobotMemory* robot_memory_;
-    fawkes::BlackBoard* blackboard_;
     fawkes::Logger* logger_;
-    const char* name_ = "RobotMemory BlackoardComputable";
-    Computable* computable;
-    mongo::BSONArray get_interface_fields(fawkes::InterfaceFieldIterator it);
+    fawkes::tf::Transformer* tf_;
+    const char* name_ = "RobotMemory TransformComputable";
+    std::vector<Computable*>  computables;
+    fawkes::Configuration* config_;
 };
 
-#endif /* FAWKES_SRC_PLUGINS_ROBOT_MEMORY_COMPUTABLES_BLACKBOARD_COMPUTABLE_H_ */
+#endif /* FAWKES_SRC_PLUGINS_ROBOT_MEMORY_COMPUTABLES_TRANSFORM_COMPUTABLE_H_ */
