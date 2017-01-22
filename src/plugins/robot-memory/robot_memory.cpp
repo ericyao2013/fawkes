@@ -194,22 +194,44 @@ QResCursor RobotMemory::query(Query query, std::string collection)
  */
 int RobotMemory::insert(BSONObj obj, std::string collection)
 {
+  // measure time for evaluation
+  BSONObjBuilder b_time;
+  b_time << "op" << "insert";
+  std::chrono::time_point<std::chrono::system_clock> start, end, mongo_start, mongo_end, lock_start, lock_end;
+  start = std::chrono::system_clock::now();
+
   check_collection_name(collection);
 
   log_deb(std::string("Inserting "+ obj.toString() + " into collection " + collection));
 
   //lock (mongo_client not thread safe)
+  lock_start = std::chrono::system_clock::now();
   MutexLocker lock(mutex_);
+  lock_end = std::chrono::system_clock::now();
 
   //actually execute insert
   try{
+    mongo_start = std::chrono::system_clock::now();
     mongodb_client_->insert(collection, obj);
+    mongo_end = std::chrono::system_clock::now();
   } catch (DBException &e) {
     std::string error = "Error for insert " + obj.toString()
         + "\n Exception: " + e.toString();
     log_deb(error, "error");
     return 0;
   }
+  //measure time and compute
+  end = std::chrono::system_clock::now();
+  std::chrono::duration<double> elapsed_total = end-start;
+  std::chrono::duration<double> elapsed_lock = lock_end-lock_start;
+  std::chrono::duration<double> elapsed_no_lock = elapsed_total - elapsed_lock;
+  std::chrono::duration<double> elapsed_mongo = mongo_end-mongo_start;
+  std::chrono::duration<double> elapsed_overhead = elapsed_total - elapsed_mongo;
+  b_time << "total" << elapsed_total.count();
+  b_time << "lock" << elapsed_lock.count();
+  b_time << "mongo" << elapsed_mongo.count();
+  mongodb_client_->insert("eval.durations", b_time.obj());
+
   //return success
   return 1;
 }
@@ -270,19 +292,42 @@ int RobotMemory::insert(std::string obj_str, std::string collection)
  */
 int RobotMemory::update(Query query, BSONObj update, std::string collection, bool upsert)
 {
+  // measure time for evaluation
+  BSONObjBuilder b_time;
+  b_time << "op" << "update";
+  b_time << "query" << query.obj.copy();
+  std::chrono::time_point<std::chrono::system_clock> start, end, mongo_start, mongo_end, lock_start, lock_end;
+  start = std::chrono::system_clock::now();
+
   check_collection_name(collection);
   log_deb(std::string("Executing Update "+update.toString()+" for query "+query.toString()+" on collection "+ collection));
 
   //lock (mongo_client not thread safe)
+  lock_start = std::chrono::system_clock::now();
   MutexLocker lock(mutex_);
+  lock_end = std::chrono::system_clock::now();
 
   //actually execute update
   try{
+    mongo_start = std::chrono::system_clock::now();
     mongodb_client_->update(collection, query, update, upsert);
+    mongo_end = std::chrono::system_clock::now();
   } catch (DBException &e) {
     log_deb(std::string("Error for update "+update.toString()+" for query "+query.toString()+"\n Exception: "+e.toString()), "error");
     return 0;
   }
+  //measure time and compute
+  end = std::chrono::system_clock::now();
+  std::chrono::duration<double> elapsed_total = end-start;
+  std::chrono::duration<double> elapsed_lock = lock_end-lock_start;
+  std::chrono::duration<double> elapsed_no_lock = elapsed_total - elapsed_lock;
+  std::chrono::duration<double> elapsed_mongo = mongo_end-mongo_start;
+  std::chrono::duration<double> elapsed_overhead = elapsed_total - elapsed_mongo;
+  b_time << "total" << elapsed_total.count();
+  b_time << "lock" << elapsed_lock.count();
+  b_time << "mongo" << elapsed_mongo.count();
+  mongodb_client_->insert("eval.durations", b_time.obj());
+
   //return success
   return 1;
 }
@@ -308,19 +353,42 @@ int RobotMemory::update(Query query, std::string update_str, std::string collect
  */
 int RobotMemory::remove(Query query, std::string collection)
 {
+  // measure time for evaluation
+  BSONObjBuilder b_time;
+  b_time << "op" << "remove";
+  b_time << "query" << query.obj.copy();
+  std::chrono::time_point<std::chrono::system_clock> start, end, mongo_start, mongo_end, lock_start, lock_end;
+  start = std::chrono::system_clock::now();
+
   check_collection_name(collection);
   log_deb(std::string("Executing Remove "+query.toString()+" on collection "+collection));
 
   //lock (mongo_client not thread safe)
+  lock_start = std::chrono::system_clock::now();
   MutexLocker lock(mutex_);
+  lock_end = std::chrono::system_clock::now();
 
   //actually execute remove
   try{
+    mongo_start = std::chrono::system_clock::now();
     mongodb_client_->remove(collection, query);
+    mongo_end = std::chrono::system_clock::now();
   } catch (DBException &e) {
     log_deb(std::string("Error for query "+query.toString()+"\n Exception: "+e.toString()), "error");
     return 0;
   }
+  //measure time and compute
+  end = std::chrono::system_clock::now();
+  std::chrono::duration<double> elapsed_total = end-start;
+  std::chrono::duration<double> elapsed_lock = lock_end-lock_start;
+  std::chrono::duration<double> elapsed_no_lock = elapsed_total - elapsed_lock;
+  std::chrono::duration<double> elapsed_mongo = mongo_end-mongo_start;
+  std::chrono::duration<double> elapsed_overhead = elapsed_total - elapsed_mongo;
+  b_time << "total" << elapsed_total.count();
+  b_time << "lock" << elapsed_lock.count();
+  b_time << "mongo" << elapsed_mongo.count();
+  mongodb_client_->insert("eval.durations", b_time.obj());
+
   //return success
   return 1;
 }
