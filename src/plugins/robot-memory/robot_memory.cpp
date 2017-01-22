@@ -120,17 +120,22 @@ QResCursor RobotMemory::query(Query query, std::string collection)
   // measure time for evaluation
   BSONObjBuilder b_time;
   b_time << "op" << "query";
-  std::chrono::time_point<std::chrono::system_clock> start, end;
+  b_time << "query" << query.obj.copy();
+  std::chrono::time_point<std::chrono::system_clock> start, end, mongo_start, mongo_end, lock_start, lock_end, computable_start, computable_end;
   start = std::chrono::system_clock::now();
 
   check_collection_name(collection);
   log_deb(std::string("Executing Query "+ query.toString() +" on collection "+collection));
 
+  computable_start = std::chrono::system_clock::now();
+
   //check if computation on demand is necessary and execute Computables
   computables_manager_->check_and_compute(query, collection);
 
   //lock (mongo_client not thread safe)
+  computable_end = lock_start = std::chrono::system_clock::now();
   MutexLocker lock(mutex_);
+  lock_end = std::chrono::system_clock::now();
 
   //set read preference of query to nearest to read from the local replica set member first
   query.readPref(ReadPreference_Nearest, BSONArray());
@@ -138,7 +143,9 @@ QResCursor RobotMemory::query(Query query, std::string collection)
   //actually execute query
   QResCursor cursor;
   try{
+    mongo_start = std::chrono::system_clock::now();
     cursor = mongodb_client_->query(collection, query);
+    mongo_end = std::chrono::system_clock::now();
   } catch (DBException &e) {
     std::string error = std::string("Error for query ")
       + query.toString() + "\n Exception: " + e.toString();
@@ -146,12 +153,36 @@ QResCursor RobotMemory::query(Query query, std::string collection)
     return NULL;
   }
 
-  //measure time
+  //measure time and compute
   end = std::chrono::system_clock::now();
-  std::chrono::duration<double> elapsed_seconds = end-start;
-  log(std::string("query-time: ") + std::to_string(elapsed_seconds.count()));
-  b_time << "complete" << elapsed_seconds.count();
+  std::chrono::duration<double> elapsed_total = end-start;
+  std::chrono::duration<double> elapsed_lock = lock_end-lock_start;
+  std::chrono::duration<double> elapsed_no_lock = elapsed_total - elapsed_lock;
+  std::chrono::duration<double> elapsed_mongo = mongo_end-mongo_start;
+  std::chrono::duration<double> elapsed_overhead = elapsed_total - elapsed_mongo;
+  std::chrono::duration<double> elapsed_computable = computable_end - computable_start;
+  b_time << "total" << elapsed_total.count();
+  b_time << "lock" << elapsed_lock.count();
+  b_time << "mongo" << elapsed_mongo.count();
+  b_time << "computable" << elapsed_computable.count();
+
+
+  std::chrono::time_point<std::chrono::system_clock> t0, t1, t2, t3, t4, t5;
+  start = std::chrono::system_clock::now();
+  t0 = std::chrono::system_clock::now();
+  t1 = std::chrono::system_clock::now();
+  t2 = std::chrono::system_clock::now();
+  t3 = std::chrono::system_clock::now();
+  t4 = std::chrono::system_clock::now();
+  t5 = std::chrono::system_clock::now();
+  end = std::chrono::system_clock::now();
+  std::chrono::duration<double> timer_antiopti = (t5-t4)+(t3-t2)+(t1-t0);
+  log("timer: " + std::to_string(timer_antiopti.count()));
+  std::chrono::duration<double> elapsed_timer = end - start;
+  b_time << "timer" << elapsed_timer.count();
+
   mongodb_client_->insert("eval.durations", b_time.obj());
+
   return cursor;
 }
 
