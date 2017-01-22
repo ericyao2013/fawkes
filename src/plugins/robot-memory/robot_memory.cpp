@@ -28,6 +28,8 @@
 #include <stdio.h>
 #include <iostream>
 #include <stdlib.h>
+#include <chrono>
+#include <ctime>
 
 // from MongoDB
 #include <mongo/client/dbclient.h>
@@ -115,6 +117,12 @@ void RobotMemory::loop()
  */
 QResCursor RobotMemory::query(Query query, std::string collection)
 {
+  // measure time for evaluation
+  BSONObjBuilder b_time;
+  b_time << "op" << "query";
+  std::chrono::time_point<std::chrono::system_clock> start, end;
+  start = std::chrono::system_clock::now();
+
   check_collection_name(collection);
   log_deb(std::string("Executing Query "+ query.toString() +" on collection "+collection));
 
@@ -137,6 +145,13 @@ QResCursor RobotMemory::query(Query query, std::string collection)
     log(error, "error");
     return NULL;
   }
+
+  //measure time
+  end = std::chrono::system_clock::now();
+  std::chrono::duration<double> elapsed_seconds = end-start;
+  log(std::string("query-time: ") + std::to_string(elapsed_seconds.count()));
+  b_time << "complete" << elapsed_seconds.count();
+  mongodb_client_->insert("eval.durations", b_time.obj());
   return cursor;
 }
 
