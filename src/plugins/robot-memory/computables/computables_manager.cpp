@@ -81,6 +81,14 @@ void ComputablesManager::remove_computable(Computable* computable)
  */
 bool ComputablesManager::check_and_compute(mongo::Query query, std::string collection)
 {
+  // measure time for evaluation
+  BSONObjBuilder b_time;
+  b_time << "op" << "computable";
+  b_time << "query" << query.obj.copy();
+  BSONArrayBuilder arr_computables;
+  std::chrono::time_point<std::chrono::system_clock> start, end, prepare_end, comp_start, comp_end, check_start, check_end, insert_start, insert_end;
+  start = std::chrono::system_clock::now();
+
   //check if computation result of the query is already cached
   for(std::map<std::tuple<std::string, std::string>, long long>::iterator it = cached_querries_.begin();
       it != cached_querries_.end(); it++)
@@ -97,13 +105,25 @@ bool ComputablesManager::check_and_compute(mongo::Query query, std::string colle
   //to do that we just insert the query as if it would be a document and query for it with the computable identifiers
   std::string current_test_collection = matching_test_collection_ + std::to_string(rand());
   robot_memory_->insert(query.obj, current_test_collection);
+  prepare_end = std::chrono::system_clock::now();
   for(std::list<Computable*>::iterator it = computables.begin(); it != computables.end(); it++)
   {
+    BSONObjBuilder b_time_comp;
+    b_time_comp << "computable" << (*it)->get_query().obj.copy();
+    check_start = std::chrono::system_clock::now();
     if(collection == (*it)->get_collection() &&  robot_memory_->query((*it)->get_query(), current_test_collection)->more())
     {
+      check_end = std::chrono::system_clock::now();
+      std::chrono::duration<double> elapsed_check = check_end - check_start;
+      b_time_comp << "check" << elapsed_check.count();
+      comp_start = std::chrono::system_clock::now();
       std::list<BSONObj> computed_docs_list = (*it)->compute(query.obj);
+      comp_end = std::chrono::system_clock::now();
+      std::chrono::duration<double> elapsed_compute = comp_end - comp_start;
+      b_time_comp << "compute" << elapsed_compute.count();
       if(computed_docs_list.size() > 0)
       {
+        insert_start = std::chrono::system_clock::now();
         //move list into vector
         std::vector<BSONObj> computed_docs_vector{ std::make_move_iterator(std::begin(computed_docs_list)),
           std::make_move_iterator(std::end(computed_docs_list))};
@@ -113,10 +133,30 @@ bool ComputablesManager::check_and_compute(mongo::Query query, std::string colle
         //TODO: fix problem: equivalent queries in different order jield unequal strings
         robot_memory_->insert(computed_docs_vector, (*it)->get_collection());
         added_computed_docs = true;
+        insert_end = std::chrono::system_clock::now();
+        std::chrono::duration<double> elapsed_insert = insert_end - insert_start;
+        b_time_comp << "insert" << elapsed_insert.count();
       }
     }
+    else
+    {
+      check_end = std::chrono::system_clock::now();
+      std::chrono::duration<double> elapsed_check = check_end - check_start;
+      b_time_comp << "check" << elapsed_check.count();
+    }
+    arr_computables.append(b_time_comp.obj());
   }
   robot_memory_->drop_collection(current_test_collection);
+
+  //measure time and log
+  end = std::chrono::system_clock::now();
+  std::chrono::duration<double> elapsed_total = end - start;
+  b_time << "total" << elapsed_total.count();
+  std::chrono::duration<double> elapsed_prepare = prepare_end - start;
+  b_time << "prepare" << elapsed_prepare.count();
+  b_time << "computables" << arr_computables.arr();
+  robot_memory_->insert(b_time.obj(), "eval.computables");
+
   return added_computed_docs;
 }
 
