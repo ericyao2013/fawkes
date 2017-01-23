@@ -114,6 +114,10 @@ void RobotMemorySetup::setup_mongods()
   create_database(mongos_port, distributed_replset);
   run_mongo_command(mongos_port, std::string("{movePrimary: '" + distributed_replset + "', to: '" + distributed_replset + "'}"), "it is already the primary");
   run_mongo_command(mongos_port, std::string("{movePrimary: '" + local_db_name + "', to: '" + local_repl_name + "'}"), "it is already the primary");
+
+  //for evaluation
+  create_database(mongos_port, "eval");
+  run_mongo_command(mongos_port, std::string("{movePrimary: 'eval', to: '" + local_repl_name + "'}"), "it is already the primary");
 }
 
 /**

@@ -22,6 +22,8 @@
 
 #include "event_trigger_manager.h"
 #include <boost/bind.hpp>
+#include <chrono>
+#include <ctime>
 
 using namespace fawkes;
 using namespace mongo;
@@ -65,6 +67,14 @@ EventTriggerManager::~EventTriggerManager()
 
 void EventTriggerManager::check_events()
 {
+  // measure time for evaluation
+  BSONObjBuilder b_time;
+  b_time << "op" << "trigger_event_check";
+  b_time << "number_triggers" << (int) triggers.size();
+  //TODO: add number of updates in oplog
+  std::chrono::time_point<std::chrono::system_clock> start, end, callback_start, callback_end;
+  start = std::chrono::system_clock::now();
+
   for(EventTrigger *trigger : triggers)
   {
     while(trigger->oplog_cursor->more())
@@ -72,7 +82,9 @@ void EventTriggerManager::check_events()
       BSONObj change = trigger->oplog_cursor->next();
       //logger_->log_info(name.c_str(), "Triggering: %s", change.toString().c_str());
       //actually call the callback function
+      callback_start = std::chrono::system_clock::now();
       trigger->callback(change);
+      callback_end = std::chrono::system_clock::now();
     }
     if(trigger->oplog_cursor->isDead())
     {
@@ -91,6 +103,16 @@ void EventTriggerManager::check_events()
       trigger->oplog_cursor = create_oplog_cursor(con, "local.oplog.rs", trigger->oplog_query);
     }
   }
+
+  //measure time and compute
+  end = std::chrono::system_clock::now();
+  std::chrono::duration<double> elapsed_total = end-start;
+  std::chrono::duration<double> elapsed_callback = callback_end-callback_start;
+  std::chrono::duration<double> elapsed_check = elapsed_total - elapsed_callback;
+  b_time << "total" << elapsed_total.count();
+  b_time << "callback" << elapsed_callback.count();
+  b_time << "check" << elapsed_check.count();
+  this->con_local_->insert("eval.trigger", b_time.obj());
 }
 
 /**
