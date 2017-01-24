@@ -546,34 +546,33 @@ MongoRRDThread::loop()
       }
 
 
-      BSONObj indexc = reply["indexCounters"].Obj()["btree"].Obj();
-      int accesses, hits, misses, resets;
-      accesses = indexc["accesses"].Int();
-      hits     = indexc["hits"].Int();
-      misses   = indexc["misses"].Int();
-      resets   = indexc["resets"].Int();
+      // BSONObj indexc = reply["indexCounters"].Obj()["btree"].Obj();
+      // int accesses, hits, misses, resets;
+      // accesses = indexc["accesses"].Int();
+      // hits     = indexc["hits"].Int();
+      // misses   = indexc["misses"].Int();
+      // resets   = indexc["resets"].Int();
 
-      try {
-	rrd_manager->add_data("indexes", "N:%i:%i:%i:%i",
-			      accesses, hits, misses, resets);
-      } catch (Exception &e) {
-	logger->log_warn(name(), "Failed to update indexes RRD, "
-			 "exception follows");
-	logger->log_warn(name(), e);
-      }
+      // try {
+      // 	rrd_manager->add_data("indexes", "N:%i:%i:%i:%i",
+      // 			      accesses, hits, misses, resets);
+      // } catch (Exception &e) {
+      // 	logger->log_warn(name(), "Failed to update indexes RRD, "
+      // 			 "exception follows");
+      // 	logger->log_warn(name(), e);
+      // }
 
       for (DbStatsMap::iterator i = __dbstats.begin(); i != __dbstats.end(); ++i) {
 	BSONObj dbstats;
 	if (mongodb_client->simpleCommand(i->second.db_name, &dbstats, "dbStats"))
 	{
 	  long int collections, objects, numExtents, indexes, dataSize,
-	    storageSize, indexSize, fileSize;
-	  double avgObjSize;
+	    storageSize, indexSize, fileSize, avgObjSize;
 
 	  try {
 	    collections = dbstats["collections"].numberLong();
 	    objects     = dbstats["objects"].numberLong();
-	    avgObjSize  = dbstats["avgObjSize"].Double();
+	    avgObjSize  = dbstats["avgObjSize"].numberLong();
 	    dataSize    = dbstats["dataSize"].numberLong();
 	    storageSize = dbstats["storageSize"].numberLong();
 	    numExtents  = dbstats["numExtents"].numberLong();
@@ -583,7 +582,7 @@ MongoRRDThread::loop()
 
 	    try {
 	      rrd_manager->add_data(i->second.rrd_name.c_str(),
-				    "N:%li:%li:%f:%li:%li:%li:%li:%li:%li", collections,
+				    "N:%li:%li:%li:%li:%li:%li:%li:%li:%li", collections,
 				    objects, avgObjSize, dataSize, storageSize,
 				    numExtents, indexes, indexSize, fileSize);
 	    } catch (Exception &e) {
