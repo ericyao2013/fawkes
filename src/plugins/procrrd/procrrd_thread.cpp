@@ -215,6 +215,27 @@ ProcRRDThread::init()
     }
   }
 
+  // for multiple processes with the same name, use the pid:
+  i = config->search("/plugins/procrrd/pids");
+  while (i->next()) {
+    if (! i->is_string()) {
+      logger->log_warn(name(), "Entry %s is not a string, but of type %s, "
+		       "ignoring", i->path(), i->type());
+      continue;
+    }
+    std::string name = i->path();
+    name.erase(0,22);
+    try {
+      std::string pid = i->get_string();
+      add_process(i->path(), pid, name);
+    } catch (Exception &e) {
+      logger->log_warn(this->name(), "Failed to add process: %s, exception follows", name.c_str());
+      logger->log_warn(this->name(), e);
+      finalize();
+      throw;
+    }
+  }
+
   std::string p;
   ProcessMap::iterator pi = __processes.begin();
   p = pi->second.name;
