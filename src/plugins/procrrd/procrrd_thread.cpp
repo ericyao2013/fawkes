@@ -334,7 +334,7 @@ ProcRRDThread::add_process(const char *path, std::string pid, std::string name)
   info.pid = pid;
   info.name = name;
 
-  info.rrd_name = info.name + "_" + info.pid;
+  info.rrd_name = info.name; // + "_" + info.pid;
   size_t pos = 0;
   size_t at;
   while((at = info.rrd_name.find_first_of(" .-", pos)) != std::string::npos) {
