@@ -105,8 +105,21 @@ void RobotMemory::init()
 
 void RobotMemory::loop()
 {
+  std::chrono::time_point<std::chrono::system_clock> start, end, middle;
+  start = std::chrono::system_clock::now();
   trigger_manager_->check_events();
+  middle = std::chrono::system_clock::now();
   computables_manager_->cleanup_computed_docs();
+  end = std::chrono::system_clock::now();
+  std::chrono::duration<double> total = end-start;
+  std::chrono::duration<double> trigger_check = middle-start;
+  std::chrono::duration<double> com_clean = end-middle;
+  if(total.count() > 0.01)
+  {
+  log("RM-Loop: total: " + std::to_string(total.count())
+  + " trigger_check: " + std::to_string(trigger_check.count())
+  + " com_clean: " + std::to_string(com_clean.count()));
+  }
 }
 
 /**
