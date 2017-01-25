@@ -178,22 +178,6 @@ QResCursor RobotMemory::query(Query query, std::string collection)
   b_time << "lock" << elapsed_lock.count();
   b_time << "mongo" << elapsed_mongo.count();
   b_time << "computable" << elapsed_computable.count();
-
-
-  std::chrono::time_point<std::chrono::system_clock> t0, t1, t2, t3, t4, t5;
-  start = std::chrono::system_clock::now();
-  t0 = std::chrono::system_clock::now();
-  t1 = std::chrono::system_clock::now();
-  t2 = std::chrono::system_clock::now();
-  t3 = std::chrono::system_clock::now();
-  t4 = std::chrono::system_clock::now();
-  t5 = std::chrono::system_clock::now();
-  end = std::chrono::system_clock::now();
-  std::chrono::duration<double> timer_antiopti = (t5-t4)+(t3-t2)+(t1-t0);
-  log("timer: " + std::to_string(timer_antiopti.count()));
-  std::chrono::duration<double> elapsed_timer = end - start;
-  b_time << "timer" << elapsed_timer.count();
-
   mongodb_client_->insert("eval.durations", b_time.obj());
 
   return cursor;
