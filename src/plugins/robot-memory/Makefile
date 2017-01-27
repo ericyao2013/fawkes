@@ -21,7 +21,7 @@ include $(BASEDIR)/src/plugins/mongodb/mongodb.mk
 include $(BASEDIR)/etc/buildsys/boost.mk
 
 PRESUBDIRS = interfaces aspect
-SUBDIRS = test-plugin
+SUBDIRS = test-plugin eval-plugin
 
 REQ_BOOST_LIBS = bind function
 HAVE_BOOST_LIBS = $(call boost-have-libs,$(REQ_BOOST_LIBS))
