@@ -127,6 +127,8 @@ class RobotMemory
     EventTriggerManager* trigger_manager_;
     ComputablesManager* computables_manager_;
 
+    std::string experiment_name_;
+
     void init();
     void loop();
 

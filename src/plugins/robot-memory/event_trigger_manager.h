@@ -102,6 +102,7 @@ class EventTriggerManager
     bool distributed_;
 
     std::list<EventTrigger*> triggers;
+    std::string experiment_name_;
 };
 
 #endif //FAWKES_SRC_PLUGINS_ROBOT_MEMORY_EVENT_TRIGGER_MANAGER_H_

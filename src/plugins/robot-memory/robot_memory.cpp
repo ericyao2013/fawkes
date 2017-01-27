@@ -89,6 +89,7 @@ void RobotMemory::init()
   try {
     database_name_ = config_->get_string("/plugins/robot-memory/database");
   } catch (Exception &e) {}
+  experiment_name_ = config_->get_string("/plugins/robot-memory/eval/experiment");
 
   //init blackboard interface
   rm_if_ = blackboard_->open_for_writing<RobotMemoryInterface>(config_->get_string("/plugins/robot-memory/interface-name").c_str());
@@ -134,6 +135,7 @@ QResCursor RobotMemory::query(Query query, std::string collection)
   BSONObjBuilder b_time;
   b_time << "op" << "query";
   b_time << "query" << query.obj.copy();
+  b_time << "experiment" << experiment_name_;
   std::chrono::time_point<std::chrono::system_clock> start, end, mongo_start, mongo_end, lock_start, lock_end, computable_start, computable_end;
   start = std::chrono::system_clock::now();
 
@@ -194,6 +196,8 @@ int RobotMemory::insert(BSONObj obj, std::string collection)
   // measure time for evaluation
   BSONObjBuilder b_time;
   b_time << "op" << "insert";
+  b_time << "experiment" << experiment_name_;
+  b_time << "obj" << obj.copy();
   std::chrono::time_point<std::chrono::system_clock> start, end, mongo_start, mongo_end, lock_start, lock_end;
   start = std::chrono::system_clock::now();
 
@@ -293,6 +297,7 @@ int RobotMemory::update(Query query, BSONObj update, std::string collection, boo
   BSONObjBuilder b_time;
   b_time << "op" << "update";
   b_time << "query" << query.obj.copy();
+  b_time << "experiment" << experiment_name_;
   std::chrono::time_point<std::chrono::system_clock> start, end, mongo_start, mongo_end, lock_start, lock_end;
   start = std::chrono::system_clock::now();
 
@@ -354,6 +359,7 @@ int RobotMemory::remove(Query query, std::string collection)
   BSONObjBuilder b_time;
   b_time << "op" << "remove";
   b_time << "query" << query.obj.copy();
+  b_time << "experiment" << experiment_name_;
   std::chrono::time_point<std::chrono::system_clock> start, end, mongo_start, mongo_end, lock_start, lock_end;
   start = std::chrono::system_clock::now();
 

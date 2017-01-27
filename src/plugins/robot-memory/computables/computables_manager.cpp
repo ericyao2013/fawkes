@@ -46,6 +46,8 @@ ComputablesManager::ComputablesManager(fawkes::Logger* logger, fawkes::Configura
     matching_test_collection_ = config_->get_string("/plugins/robot-memory/database") + ".computables_matching";
   } catch (Exception &e) {}
 
+  experiment_name_ = config_->get_string("/plugins/robot-memory/eval/experiment");
+
   srand(time(NULL));
 }
 
@@ -85,6 +87,7 @@ bool ComputablesManager::check_and_compute(mongo::Query query, std::string colle
   BSONObjBuilder b_time;
   b_time << "op" << "computable";
   b_time << "query" << query.obj.copy();
+  b_time << "experiment" << experiment_name_;
   BSONArrayBuilder arr_computables;
   std::chrono::time_point<std::chrono::system_clock> start, end, prepare_end, comp_start, comp_end, check_start, check_end, insert_start, insert_end;
   start = std::chrono::system_clock::now();

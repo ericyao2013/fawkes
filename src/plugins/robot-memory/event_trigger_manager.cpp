@@ -33,6 +33,7 @@ EventTriggerManager::EventTriggerManager(Logger* logger, Configuration* config)
   logger_ = logger;
   config_ = config;
   distributed_ = config_->get_bool("plugins/robot-memory/setup/distributed");
+  experiment_name_ = config_->get_string("/plugins/robot-memory/eval/experiment");
 
   // create connections to running mongod instances because only there
   con_local_ = new mongo::DBClientConnection();
@@ -71,6 +72,7 @@ void EventTriggerManager::check_events()
   BSONObjBuilder b_time;
   b_time << "op" << "trigger_event_check";
   b_time << "number_triggers" << (int) triggers.size();
+  b_time << "experiment" << experiment_name_;
   //TODO: add number of updates in oplog
   std::chrono::time_point<std::chrono::system_clock> start, end, callback_start, callback_end;
   start = std::chrono::system_clock::now();

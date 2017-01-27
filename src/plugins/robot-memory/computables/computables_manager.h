@@ -78,6 +78,7 @@ class ComputablesManager
     std::string matching_test_collection_;
     //cached querries as ((collection, querry), cached_until)
     std::map<std::tuple<std::string, std::string>, long long> cached_querries_;
+    std::string experiment_name_;
 };
 
 #endif /* FAWKES_SRC_PLUGINS_ROBOT_MEMORY_COMPUTABLES_COMPUTABLES_MANAGER_H_ */
