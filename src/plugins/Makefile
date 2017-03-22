@@ -21,7 +21,7 @@ SUBDIRS	= bbsync bblogger webview ttmainloop rrd rrdweb \
 	  laser imu flite festival joystick openrave \
 	  katana jaco pantilt roomba nao robotino \
 	  bumblebee2 perception amcl \
-	  skiller luaagent worldmodel \
+	  skiller luaagent \
 	  laser-filter laser-lines laser-cluster laser-pointclouds \
 	  static_transforms navgraph navgraph-clusters navgraph-generator colli \
 	  clips clips-agent clips-protobuf clips-webview clips-navgraph clips-ros \
@@ -35,7 +35,7 @@ include $(BUILDSYSDIR)/rules.mk
 luaagent: skiller
 rrdweb: rrd
 katana jaco: openrave
-amcl colli navgraph perception robotino: ros
+amcl colli laser-lines navgraph navgraph-generator navgraph-interactive perception robotino: ros
 mongodb_log: mongodb
 mongodb: rrd
 clips-navgraph clips-agent clips-protobuf clips-tf clips-robot-memory: clips

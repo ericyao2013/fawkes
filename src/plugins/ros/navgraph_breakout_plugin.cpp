@@ -1,10 +1,9 @@
 
 /***************************************************************************
- *  fuser.h - Fawkes WorldModel Fuser Interface
+ *  navgraph_breakout_plugin.cpp - Provide navgraph-like API through ROS
  *
- *  Created: Tue Jan 13 11:21:13 2009
- *  Copyright  2006-2009  Tim Niemueller [www.niemueller.de]
- *
+ *  Created: Fri Jan 27 11:19:24 2017
+ *  Copyright  2017  Tim Niemueller
  ****************************************************************************/
 
 /*  This program is free software; you can redistribute it and/or modify
@@ -20,16 +19,26 @@
  *  Read the full text in the LICENSE.GPL file in the doc directory.
  */
 
-#ifndef __PLUGINS_WORLDMODEL_FUSER_FUSER_H_
-#define __PLUGINS_WORLDMODEL_FUSER_FUSER_H_
+#include <core/plugin.h>
+#include "navgraph_breakout_thread.h"
 
-class WorldModelFuser
+using namespace fawkes;
+
+/** Provide navgraph-like API through ROS.
+ * @author Tim Niemueller
+ */
+class RosNavgraphBreakoutPlugin : public fawkes::Plugin
 {
  public:
-  virtual ~WorldModelFuser();
-
-  virtual void fuse() = 0;
+  /** Constructor.
+   * @param config Fawkes configuration
+   */
+  RosNavgraphBreakoutPlugin(Configuration *config)
+    : Plugin(config)
+  {
+    thread_list.push_back(new RosNavgraphBreakoutThread());
+  }
 };
 
-
-#endif
+PLUGIN_DESCRIPTION("Use external ROS node for place goto")
+EXPORT_PLUGIN(RosNavgraphBreakoutPlugin)

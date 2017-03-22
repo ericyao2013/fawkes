@@ -1,10 +1,9 @@
 
 /***************************************************************************
- *  wm_thread.h - Fawkes WorldModel Plugin Thread
+ *  navgraph_breakout_thread.h - Provide navgraph-like API through ROS
  *
- *  Created: Fri Jun 29 11:54:58 2007 (on flight to RoboCup 2007, Atlanta)
- *  Copyright  2006-2007  Tim Niemueller [www.niemueller.de]
- *
+ *  Created: Fri Jan 27 11:20:32 2017
+ *  Copyright  2017  Tim Niemueller
  ****************************************************************************/
 
 /*  This program is free software; you can redistribute it and/or modify
@@ -19,64 +18,54 @@
  *
  *  Read the full text in the LICENSE.GPL file in the doc directory.
  */
-
-#ifndef __PLUGINS_WORLDMODEL_WM_THREAD_H_
-#define __PLUGINS_WORLDMODEL_WM_THREAD_H_
+ 
+#ifndef __ROS_NAVGRAPH_BREAKOUT_THREAD_H_
+#define __ROS_NAVGRAPH_BREAKOUT_THREAD_H_
 
 #include <core/threading/thread.h>
-#include <core/utils/lock_list.h>
 #include <aspect/blocked_timing.h>
 #include <aspect/logging.h>
-#include <aspect/configurable.h>
 #include <aspect/blackboard.h>
-#include <aspect/network.h>
-#include <aspect/clock.h>
+#include <aspect/configurable.h>
+
+#include <ros/ros.h>
+#include <fawkes_msgs/NavGraphGotoAction.h>
+#include <fawkes_msgs/NavGraphGotoGoal.h>
+#include <actionlib/client/simple_action_client.h>
+
+#include <string>
 
 namespace fawkes {
-  class WorldInfoTransceiver;
-  class ObjectPositionInterface;
+  class NavigatorInterface;
 }
 
-class WorldModelNetworkThread;
-class WorldModelFuser;
-
-class WorldModelThread
+class RosNavgraphBreakoutThread
 : public fawkes::Thread,
   public fawkes::BlockedTimingAspect,
   public fawkes::LoggingAspect,
-  public fawkes::ConfigurableAspect,
   public fawkes::BlackBoardAspect,
-  public fawkes::ClockAspect,
-  public fawkes::NetworkAspect
+  public fawkes::ConfigurableAspect
 {
  public:
-  WorldModelThread(WorldModelNetworkThread *net_thread);
-  virtual ~WorldModelThread();
+  RosNavgraphBreakoutThread();
 
   virtual void init();
-  virtual void loop();
   virtual void finalize();
-
-  void init_failure_cleanup();
+  virtual void loop();
 
  /** Stub to see name in backtrace for easier debugging. @see Thread::run() */
  protected: virtual void run() { Thread::run(); }
 
  private:
-  std::string   __cfg_confspace;
+  typedef actionlib::SimpleActionClient<fawkes_msgs::NavGraphGotoAction> NavGraphGotoClient;
 
-  WorldModelNetworkThread *__net_thread;
-
-  std::list<WorldModelFuser *>           __fusers;
-  std::list<WorldModelFuser *>::iterator __fit;
-
-  bool __wi_send_enabled;
-  unsigned int __wi_send_interval;
-  unsigned int __wi_send_counter;
-
-  fawkes::ObjectPositionInterface* __wi_send_ball;
-  fawkes::ObjectPositionInterface* __wi_send_pose;
+  std::string cfg_action_topic_;
+  
+  fawkes::NavigatorInterface *pp_nav_if_;
+  NavGraphGotoClient *ac_;
+  fawkes_msgs::NavGraphGotoGoal goal_;
+  bool goal_active_;
+  bool was_connected_;
 };
 
-
-#endif
+#endif /* __ROS_NAVIGATOR_THREAD_H_ */
