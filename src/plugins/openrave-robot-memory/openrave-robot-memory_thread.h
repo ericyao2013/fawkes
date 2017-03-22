@@ -1,11 +1,9 @@
 
 /***************************************************************************
- *  pddl_robot_memory_thread.h - pddl_robot_memory
+ *  openrave-robot-memory_thread.h - openrave-robot-memory
  *
- *  Plugin created: Thu Oct 13 13:34:05 2016
-
+ *  Created: Thu Nov 24 13:14:33 2016
  *  Copyright  2016  Frederik Zwilling
- *
  ****************************************************************************/
 
 /*  This program is free software; you can redistribute it and/or modify
@@ -21,35 +19,35 @@
  *  Read the full text in the LICENSE.GPL file in the doc directory.
  */
 
-#ifndef __PLUGINS_PDDL_ROBOT_MEMORYTHREAD_H_
-#define __PLUGINS_PDDL_ROBOT_MEMORYTHREAD_H_
+#ifndef __PLUGINS_OPENRAVE_ROBOT_MEMORY_THREAD_H_
+#define __PLUGINS_OPENRAVE_ROBOT_MEMORY_THREAD_H_
 
 #include <core/threading/thread.h>
+#include <aspect/blocked_timing.h>
 #include <aspect/logging.h>
 #include <aspect/blackboard.h>
 #include <aspect/configurable.h>
+#include <interfaces/OpenRaveInterface.h>
+#include <interfaces/OpenraveRobotMemoryInterface.h>
 #include <plugins/robot-memory/aspect/robot_memory_aspect.h>
-#include <blackboard/interface_listener.h>
-
-#include <string>
-
-#include <ctemplate/template.h>
-#include "interfaces/PddlGenInterface.h"
+#include <list>
+#include <algorithm>
 
 namespace fawkes {
+  // add forward declarations here, e.g., interfaces
 }
 
-class PddlRobotMemoryThread 
+class OpenraveRobotMemoryThread 
 : public fawkes::Thread,
+  public fawkes::BlockedTimingAspect,
   public fawkes::LoggingAspect,
   public fawkes::ConfigurableAspect,
-  public fawkes::BlackBoardAspect,
   public fawkes::RobotMemoryAspect,
-  public fawkes::BlackBoardInterfaceListener
+  public fawkes::BlackBoardAspect
 {
 
  public:
-  PddlRobotMemoryThread();
+  OpenraveRobotMemoryThread();
 
   virtual void init();
   virtual void finalize();
@@ -59,18 +57,12 @@ class PddlRobotMemoryThread
   protected: virtual void run() { Thread::run(); }
 
  private:
-  fawkes::PddlGenInterface *gen_if;
+  fawkes::OpenRaveInterface* openrave_if_;
+  fawkes::OpenraveRobotMemoryInterface* or_rm_if_;
+  std::list<std::string> added_objects_;
+  std::list<std::string> added_object_types_;
 
-  std::string collection;
-  std::string input_path;
-  std::string output_path;
-  std::string goal;
-
-  void fill_dict_from_document(ctemplate::TemplateDictionary *dict, mongo::BSONObj obj, std::string prefix = "");
-  void generate();
-
-  virtual bool bb_interface_message_received(fawkes::Interface *interface,
-                                             fawkes::Message *message) throw();
+  void construct_scene();
 };
 
 

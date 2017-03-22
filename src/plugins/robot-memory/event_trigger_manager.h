@@ -25,9 +25,12 @@
 #include <mongo/client/dbclient.h>
 #include <aspect/logging.h>
 #include <aspect/configurable.h>
+#include <plugins/mongodb/aspect/mongodb_conncreator.h>
 #include <list>
 #include "event_trigger.h"
 #include <boost/bind.hpp>
+#include <plugin/loader.h>
+#include <core/threading/mutex_locker.h>
 
 
 ///typedef for shorter type description
@@ -42,7 +45,7 @@ class EventTriggerManager
   friend class RobotMemory;
 
   public:
-    EventTriggerManager(fawkes::Logger* logger, fawkes::Configuration* config);
+    EventTriggerManager(fawkes::Logger* logger, fawkes::Configuration* config, fawkes::MongoDBConnCreator* mongo_connection_manager);
     virtual ~EventTriggerManager();
 
     /**
@@ -56,6 +59,9 @@ class EventTriggerManager
     template<typename T>
     EventTrigger* register_trigger(mongo::Query query, std::string collection, void(T::*callback)(mongo::BSONObj), T *obj)
     {
+      //lock to be thread safe (e.g. registration during checking)
+      fawkes::MutexLocker lock(mutex_);
+
       //construct query for oplog
       mongo::BSONObjBuilder query_builder;
       query_builder.append("ns", collection);
@@ -69,19 +75,13 @@ class EventTriggerManager
       oplog_query.readPref(mongo::ReadPreference_Nearest, mongo::BSONArray());
 
       //check if collection is local or replicated
-      mongo::DBClientConnection* con;
+      mongo::DBClientBase* con;
       std::string oplog;
       oplog = "local.oplog.rs";
-      if(collection.find(repl_set) == 0)
-      {
+      if(collection.find(repl_set_dist) == 0)
         con = con_replica_;
-        if(!distributed_)
-          logger_->log_error(name.c_str(), "Can not add trigger for %s, if the robot memory is not configured to be distributed", collection.c_str());
-      }
       else
-      {
         con = con_local_;
-      }
 
       EventTrigger *trigger = new EventTrigger(oplog_query, collection, boost::bind(callback, obj, _1));
       trigger->oplog_cursor = create_oplog_cursor(con, oplog, oplog_query);
@@ -93,17 +93,19 @@ class EventTriggerManager
 
   private:
     void check_events();
-    QResCursor create_oplog_cursor(mongo::DBClientConnection* con, std::string oplog, mongo::Query query);
+    QResCursor create_oplog_cursor(mongo::DBClientBase* con, std::string oplog, mongo::Query query);
 
     std::string name = "RobotMemory EventTriggerManager";
     fawkes::Logger* logger_;
     fawkes::Configuration* config_;
+    fawkes::Mutex *mutex_;
 
+    fawkes::MongoDBConnCreator* mongo_connection_manager_;
     //MongoDB connections (necessary because the mongos instance used by the robot memory has no access to the oplog)
-    mongo::DBClientConnection* con_local_;
-    mongo::DBClientConnection* con_replica_;
+    mongo::DBClientBase* con_local_;
+    mongo::DBClientBase* con_replica_;
 
-    std::string repl_set, local_db;
+    std::string repl_set_dist, repl_set_local, local_db;
     bool distributed_;
 
     std::list<EventTrigger*> triggers;

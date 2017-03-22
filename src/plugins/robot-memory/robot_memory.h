@@ -25,7 +25,9 @@
 #include <aspect/configurable.h>
 #include <aspect/logging.h>
 #include <aspect/blackboard.h>
+#include <plugins/mongodb/aspect/mongodb_conncreator.h>
 #include <memory>
+#include <vector>
 
 #include <mongo/client/dbclient.h>
 #include "interfaces/RobotMemoryInterface.h"
@@ -46,13 +48,14 @@ class RobotMemory
 
   public:
     RobotMemory(fawkes::Configuration* config, fawkes::Logger* logger,
-                fawkes::Clock* clock, mongo::DBClientBase* mongodb_client,
+                fawkes::Clock* clock, fawkes::MongoDBConnCreator* mongo_connection_manager,
                 fawkes::BlackBoard* blackboard);
     virtual ~RobotMemory();
 
     //robot memory functions
     QResCursor query(mongo::Query query, std::string collection = "");
     int insert(mongo::BSONObj obj, std::string collection = "");
+    int insert(std::vector<mongo::BSONObj> v_obj, std::string collection = "");
     int insert(std::string obj_str, std::string collection = "");
     int update(mongo::Query query, mongo::BSONObj update, std::string collection = "", bool upsert = false);
     int update(mongo::Query query, std::string update_str, std::string collection = "", bool upsert = false);
@@ -73,6 +76,7 @@ class RobotMemory
     template<typename T>
     EventTrigger* register_trigger(mongo::Query query, std::string collection, void(T::*callback)(mongo::BSONObj), T *_obj)
     {
+      check_collection_name(collection);
       return trigger_manager_->register_trigger(query, collection, callback, _obj);
     }
     /**
@@ -86,6 +90,7 @@ class RobotMemory
     template<typename T>
     EventTrigger* register_trigger(std::string query_str, std::string collection, void(T::*callback)(mongo::BSONObj), T *_obj)
     {
+      check_collection_name(collection);
       return register_trigger(mongo::fromjson(query_str), collection, callback, _obj);
     }
     void remove_trigger(EventTrigger* trigger);
@@ -100,14 +105,18 @@ class RobotMemory
      * @return Computable Object pointer used for removing it
      */
     template<typename T>
-    Computable* register_computable(mongo::Query query_to_compute, std::string collection, std::list<mongo::BSONObj>(T::*compute_func)(mongo::BSONObj, std::string), T *obj)
+    Computable* register_computable(mongo::Query query_to_compute, std::string collection, std::list<mongo::BSONObj>(T::*compute_func)(mongo::BSONObj, std::string), T *obj, double caching_time = 0.0, int priority = 0)
     {
-      return computables_manager_->register_computable(query_to_compute, collection, compute_func, obj);
+      check_collection_name(collection);
+      return computables_manager_->register_computable(query_to_compute, collection, compute_func, obj, caching_time, priority);
     }
     void remove_computable(Computable* computable);
 
   private:
-    mongo::DBClientBase* mongodb_client_;
+    fawkes::MongoDBConnCreator* mongo_connection_manager_;
+    mongo::DBClientBase* mongodb_client_local_;
+    mongo::DBClientBase* mongodb_client_distributed_;
+    bool distributed_;
     fawkes::Configuration* config_;
     fawkes::Logger* logger_;
     fawkes::Clock* clock_;
@@ -121,6 +130,7 @@ class RobotMemory
     fawkes::RobotMemoryInterface* rm_if_;
     EventTriggerManager* trigger_manager_;
     ComputablesManager* computables_manager_;
+    std::vector<std::string> distributed_dbs_;
 
     void init();
     void loop();
@@ -137,6 +147,7 @@ class RobotMemory
     void remove_field(mongo::Query &q, std::string what);
 
     void check_collection_name(std::string &collection);
+    mongo::DBClientBase* get_mongodb_client(std::string &collection);
 };
 
 #endif /* FAWKES_SRC_PLUGINS_ROBOT_MEMORY_ROBOT_MEMORY_H_ */

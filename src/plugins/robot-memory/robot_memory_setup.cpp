@@ -51,11 +51,13 @@ void RobotMemorySetup::setup_mongods()
   std::string local_repl_name = config->get_string("plugins/robot-memory/setup/local/replica-set-name");
   std::string local_port_str = std::to_string(local_port);
   std::string local_db_path = StringConversions::resolve_path(config->get_string("plugins/robot-memory/setup/local/db-path").c_str());
+  std::string oplog_size = std::to_string(config->get_int("plugins/robot-memory/setup/oplog-size"));
   prepare_mongo_db_path(local_db_path);
   const char *local_argv[] = {"mongod", "--port", local_port_str.c_str(),
 			      "--replSet", local_repl_name.c_str(),
-      "--dbpath", local_db_path.c_str(), NULL}; //local replica set just to enable the oplog
-  start_mongo_process("mongod-local", local_port, local_argv);
+      "--dbpath", local_db_path.c_str(),  "--nojournal",
+      "--oplogSize", oplog_size.c_str(), NULL}; //local replica set just to enable the oplog
+  local_mongod = start_mongo_process("mongod-local", local_port, local_argv);
   std::string local_config = "{_id: '" + local_repl_name + "', members:[{_id:1,host:'localhost:" + local_port_str + "'}]}";
   run_mongo_command(local_port, std::string("{replSetInitiate:" + local_config + "}"), "already initialized");
   //wait for initialization
@@ -65,15 +67,6 @@ void RobotMemorySetup::setup_mongods()
   if(!config->get_bool("plugins/robot-memory/setup/distributed"))
     return;
 
-  //start config server
-  unsigned int config_port = config->get_uint("plugins/robot-memory/setup/config/port");
-  std::string db_path = StringConversions::resolve_path(config->get_string("plugins/robot-memory/setup/config/db-path").c_str());
-  prepare_mongo_db_path(db_path);
-  std::string config_port_str = std::to_string(config_port);
-  const char *config_argv[] = {"mongod", "--configsvr", "--port",
-      config_port_str.c_str(), "--dbpath", db_path.c_str(), NULL};
-  start_mongo_process("mongod-config", config_port, config_argv);
-
   //start own part of replica set
   unsigned int distributed_port = config->get_uint("plugins/robot-memory/setup/replicated/port");
   std::string distributed_db_path = StringConversions::resolve_path(config->get_string("plugins/robot-memory/setup/replicated/db-path").c_str());
@@ -82,53 +75,36 @@ void RobotMemorySetup::setup_mongods()
   std::string distributed_replset = config->get_string("plugins/robot-memory/setup/replicated/replica-set-name");
   const char *distributed_argv[] = {"mongod", "--port", distributed_port_str.c_str(),
       "--dbpath", distributed_db_path.c_str(),
-      "--replSet", distributed_replset.c_str(),NULL};
-  start_mongo_process("mongod-replicated", distributed_port, distributed_argv);
+      "--replSet", distributed_replset.c_str(),  "--nojournal",
+      "--oplogSize", oplog_size.c_str(), NULL};
+  distribuded_mongod = start_mongo_process("mongod-replicated", distributed_port, distributed_argv);
 
   //configure replica set
+  if(config->get_bool("plugins/robot-memory/setup/replicated/initiate"))
+  {
   std::string repl_config = "{_id:'" + distributed_replset + "', members:"
       + config->get_string("plugins/robot-memory/setup/replicated/replica-set-members") + "}";
-  run_mongo_command(distributed_port, std::string("{replSetInitiate:" + repl_config + "}"), "already initialized");
+  //run_mongo_command(distributed_port, std::string("{replSetInitiate:" + repl_config + "}"), "already initialized");
   //wait for replica set initialization and election
-  usleep(3000000);
-
-  //start mongos for accessing
-  unsigned int mongos_port = config->get_uint("plugins/robot-memory/setup/mongos/port");
-  std::string mongos_port_str = std::to_string(mongos_port);
-  std::string confighost = "localhost:" + config_port_str;
-  const char *mongos_argv[] = {"mongos", "--port", mongos_port_str.c_str(),
-      "--configdb", confighost.c_str(), NULL};
-  start_mongo_process("mongos", mongos_port, mongos_argv);
-
-  //configure mongos (add parts of the sharded cluster)
-  mongo::BSONObj current_shards =  run_mongo_command(mongos_port, std::string("{listShards:1}"));
-  if(current_shards.getField("shards").Array().size() < 2)
-  {
-    run_mongo_command(mongos_port, std::string("{addShard: '" + local_repl_name +
-      "/localhost:" + local_port_str + "'}"), "host already used");
-    run_mongo_command(mongos_port, std::string("{addShard: '" + distributed_replset +
-      "/localhost:" + distributed_port_str + "'}"), "host already used");
   }
-  //define which db is in which shard
-  create_database(mongos_port, local_db_name);
-  create_database(mongos_port, distributed_replset);
-  run_mongo_command(mongos_port, std::string("{movePrimary: '" + distributed_replset + "', to: '" + distributed_replset + "'}"), "it is already the primary");
-  run_mongo_command(mongos_port, std::string("{movePrimary: '" + local_db_name + "', to: '" + local_repl_name + "'}"), "it is already the primary");
+  usleep(3000000);
 }
 
 /**
  * Start a single mongo process
  */
-void RobotMemorySetup::start_mongo_process(std::string proc_name, unsigned int port, const char *argv[])
+fawkes::SubProcess* RobotMemorySetup::start_mongo_process(std::string proc_name, unsigned int port, const char *argv[])
 {
   if (!is_mongo_running(port))
     {
       std::string cmd = command_args_tostring(argv);
       logger->log_warn("RobotMemorySetup", "Starting %s process: '%s'", proc_name.c_str(), cmd.c_str());
-      config_mongod = new SubProcess(proc_name.c_str(), argv[0], argv, NULL, logger);
+      fawkes::SubProcess * process = new SubProcess(proc_name.c_str(), argv[0], argv, NULL, logger);
       logger->log_info("RobotMemorySetup", "Started %s", proc_name.c_str());
       wait_until_started(port, cmd, config->get_int("plugins/robot-memory/setup/max_setup_time"));
+      return process;
     }
+  return NULL;
 }
 
 /**
@@ -139,12 +115,8 @@ void RobotMemorySetup::shutdown_mongods()
 {
   if(local_mongod)
     delete local_mongod;
-  if(config_mongod)
-    delete config_mongod;
   if(distribuded_mongod)
     delete distribuded_mongod;
-  if(mongos)
-    delete mongos;
 }
 
 /**

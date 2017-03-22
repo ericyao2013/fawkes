@@ -29,12 +29,17 @@
 #include "computable.h"
 #include <boost/bind.hpp>
 #include <utility>
+#include <map>
+#include <tuple>
+
+//forward declaration
+class RobotMemory;
 
 class ComputablesManager
 {
   public:
     ComputablesManager(fawkes::Logger* logger, fawkes::Configuration* config,
-      mongo::DBClientBase* mongodb_client, fawkes::Clock* clock);
+      RobotMemory* robot_memory, fawkes::Clock* clock);
     virtual ~ComputablesManager();
 
     bool check_and_compute(mongo::Query query, std::string collection);
@@ -51,10 +56,14 @@ class ComputablesManager
      * @return Computable Object pointer used for removing it
      */
     template<typename T>
-    Computable* register_computable(mongo::Query query_to_compute, std::string collection, std::list<mongo::BSONObj>(T::*compute_func)(mongo::BSONObj, std::string), T *obj)
+    Computable* register_computable(mongo::Query query_to_compute, std::string collection, std::list<mongo::BSONObj>(T::*compute_func)(mongo::BSONObj, std::string), T *obj, double caching_time = 0.0, int priority = 0)
     {
-      Computable* comp = new Computable(query_to_compute, collection, boost::bind(compute_func, obj, _1, _2));
-      computables.push_back(comp);
+      Computable* comp = new Computable(query_to_compute, collection, boost::bind(compute_func, obj, _1, _2), caching_time, priority);
+      //sort it into the right position
+      std::list<Computable*>::iterator pos = computables.begin();
+      while(pos != computables.end() && priority < (*pos)->get_priority())
+        pos++;
+      computables.insert(pos, comp);
       return comp;
     }
 
@@ -62,12 +71,13 @@ class ComputablesManager
     std::string name = "RobotMemory ComputablesManager";
     fawkes::Logger* logger_;
     fawkes::Configuration* config_;
-    mongo::DBClientBase* mongodb_client_;
+    RobotMemory* robot_memory_;
     fawkes::Clock* clock_;
 
     std::list<Computable*> computables;
     std::string matching_test_collection_;
-    std::list<std::string> collections_to_cleanup;
+    //cached querries as ((collection, querry), cached_until)
+    std::map<std::tuple<std::string, std::string>, long long> cached_querries_;
 };
 
 #endif /* FAWKES_SRC_PLUGINS_ROBOT_MEMORY_COMPUTABLES_COMPUTABLES_MANAGER_H_ */

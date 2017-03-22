@@ -39,9 +39,11 @@ TransformComputable::TransformComputable(RobotMemory* robot_memory, fawkes::tf::
   //register computable
   Query query = fromjson("{frame:{$exists:true},allow_tf:true}");
   std::vector<std::string>  collections = config->get_strings("plugins/robot-memory/computables/transform/collections");
+  int priority = config->get_int("plugins/robot-memory/computables/transform/priority");
+  float caching_time = config->get_float("plugins/robot-memory/computables/transform/caching-time");
   for(std::string col : collections)
   {
-    computables.push_back(robot_memory_->register_computable(query, col, &TransformComputable::compute_transform, this));
+    computables.push_back(robot_memory_->register_computable(query, col, &TransformComputable::compute_transform, this, caching_time, priority));
   }
 }
 
@@ -55,8 +57,6 @@ TransformComputable::~TransformComputable()
 
 std::list<mongo::BSONObj> TransformComputable::compute_transform(mongo::BSONObj query, std::string collection)
 {
-  logger_->log_info(name_, "Tfcomputable: %s", query.toString().c_str());
-
   //get positions in other frames
   BSONObjBuilder query_other_frames;
   query_other_frames.appendElements(query.removeField("frame").removeField("allow_tf"));
@@ -69,7 +69,6 @@ std::list<mongo::BSONObj> TransformComputable::compute_transform(mongo::BSONObj 
   while(cur->more())
   {
     BSONObj pos = cur->next();
-    logger_->log_info(name_, "Transforming: %s", pos.toString().c_str());
     if(pos.hasField("frame") && pos.hasField("translation") && pos.hasField("rotation"))
     {
       std::string src_frame = pos.getField("frame").String();
@@ -85,8 +84,9 @@ std::list<mongo::BSONObj> TransformComputable::compute_transform(mongo::BSONObj 
         fawkes::tf::Stamped<fawkes::tf::Pose> res_stamped_pose;
         tf_->transform_pose(target_frame.c_str(), src_stamped_pose, res_stamped_pose);
 
-        res_pos.appendElements(query.removeField("frame").removeField("translation").removeField("rotation"));
+        res_pos.appendElements(pos.removeField("frame").removeField("translation").removeField("rotation").removeField("_id"));
         res_pos.append("frame", target_frame);
+        res_pos.append("allow_tf", true);
         BSONArrayBuilder arrb_trans;
         arrb_trans.append(res_stamped_pose.getOrigin().x());
         arrb_trans.append(res_stamped_pose.getOrigin().y());
@@ -98,14 +98,12 @@ std::list<mongo::BSONObj> TransformComputable::compute_transform(mongo::BSONObj 
         arrb_rot.append(res_stamped_pose.getRotation().z());
         arrb_rot.append(res_stamped_pose.getRotation().w());
         res_pos.append("rotation", arrb_rot.arr());
-        //logger_->log_info(name_, "Tf res: %s", res_pos.obj().toString().c_str());
-
         res.push_back(res_pos.obj());
       }
-      else
-      {
-        logger_->log_info(name_, "Cant transform %s to %s", src_frame.c_str(), target_frame.c_str());
-      }
+//      else
+//      {
+//        logger_->log_info(name_, "Cant transform %s to %s", src_frame.c_str(), target_frame.c_str());
+//      }
     }
   }
   return res;
