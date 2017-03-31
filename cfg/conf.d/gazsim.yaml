@@ -4,39 +4,89 @@
 doc-url: !url http://trac.fawkesrobotics.org/wiki/Plugins/gazsim
 ---
 gazsim:
+  proto-dirs: ["@BASEDIR@/src/libs/llsf_msgs"]
   world-name: "LLSF"
   #default robot name
-  robot-name: ""
+  robot-name: "carologistics-robotino"
 
-  
   topics:
     gps: "~/gazsim/gps/"
-    laser: "~/hokuyo/link/laser/scan"
+    laser: "~/carologistics-robotino-3/sick_laser/link/laser/scan"
     gyro: "~/RobotinoSim/Gyro/"
-    infrared-puck-sensor: "~/RobotinoSim/InfraredPuckSensor/"
+    infrared-puck-sensor: "~/carologistics-robotino-3/infrared_sensor/link/infrared_puck_sensor/scan"
     gripper-laser-left: "~/RobotinoSim/GripperLaserSensor/Left/"
     gripper-laser-right: "~/RobotinoSim/GripperLaserSensor/Right/"
     motor-move: "~/RobotinoSim/MotorMove/"
+    puck-detection: "~/RobotinoSim/PuckDetectionResult/"
     time: "~/gazsim/time-sync/"
+    machine-lights: "~/RobotinoSim/MachineVision/"
+    machine-info: "~/LLSFRbSim/MachineInfo/"
+    mps-machine-signal: "~/gazsim/light-signal/"
+    puck-info: "~/LLSFRbSim/PuckInfo/"
+    game-state: "~/LLSFRbSim/GameState/"
+    set-game-state: "~/LLSFRbSim/SetGameState/"
+    set-game-phase: "~/LLSFRbSim/SetGamePhase/"
+    set-team-name: "~/LLSFRbSim/SetTeamName/"
+    place-puck-under-machine: "~/LLSFRbSim/PlacePuckUnderMachine/"
+    remove-puck-under-machine: "~/LLSFRbSim/RemovePuckFromMachine/"
     message: "~/RobotinoSim/String/"
+    gripper: "~/RobotinoSim/SetGripper/"
+    gripper-has-puck: "~/RobotinoSim/GripperHasPuck/"
+    tag-vision: "~/tag-vision"
+  
+  llsf-rb-comm:
+    refbox-host: "127.0.0.1"
+    refbox-port: 4444
 
   laser:
-    max_range: 5.5 
-    interface-id: "Laser urg"
+    max_range: 9.5
+    interface-id: "Laser tim55x"
     frame-id: !frame base_laser
-
+ 
   webcam:
     # list of ids for all cameras to simulate
     # for each id you need to add entries to the following fields 
-    shm-image-ids: ["light_front", "gazsim_puck"]
+    shm-image-ids: ["gazsim_tag", "gazsim_puck"]
     topic-suffixes:
-      light_front: "/carologistics-robotino-3/webcam/link/webcam_sensor/image"
+      gazsim_tag: "/carologistics-robotino-3/webcam_tag/link/webcam_sensor/image"
+      gazsim_puck: "/carologistics-robotino-3/webcam_puck/link/webcam_sensor/image"
     widths:
-      light_front: 320
+      gazsim_tag: 320
+      gazsim_puck: 320
     heights:
-      light_front: 240
+      gazsim_tag: 240
+      gazsim_puck: 240
     frames:
-      light_front: !frame cam_front
+      gazsim_tag: !frame cam_front
+      gazsim_puck: !frame cam_front
+    
+  light-front:
+    max-distance: 0.3
+    success-visibility-history: 300
+    fail-visibility-history: -300
+    visibility-history-increase-per-update: 30
+    see-all-delivery-gates: true
+    interface-id-multiple: "/machine-signal/"
+    interface-id-single: "/machine-signal/best"
+    interface-id-switch: "/machine-signal"
+    interface-id-delivery-switch: "/machine-signal/delivery-mode"
+    interface-id-delivery-pose: "/machine-signal/open-delivery-gate"
+    interface-id-hint: "/machine-signal/position-hint"
+    deliver-pos-x-min: 4.0
+    deliver-pos-y-min: 1.5
+    deliver-pos-y-max: 4.0
+    deliver-ori-max-diff: 1.18
+
+  puck-detection:
+    number-pucks: 44
+    number-interfaces: 3
+    max-distance: 1.0
+    success-visibility-history: 300
+    fail-visibility-history: -300
+    use-switch-interface: false
+    is-omni-directional: false
+    # if the puck vision is not omni-directional, what is the field of view?
+    max-fov-angle: 0.6
 
   robotino:
     gripper-laser-threshold: 0.18
@@ -44,26 +94,34 @@ gazsim:
     gripper-laser-value-near: 9.99
     # buffer for delaying sensor values
     gyro-buffer-size: 500
-    gyro-delay: 0.2
-    infrared-sensor-index: 8
+    gyro-delay: 0.1
+    infrared-sensor-index: 0
 
     motor:    
       # does the odometry change if the robotino drives against an obstacle?
       slippery-wheels-enabled: true
-      slippery-wheels-threshold: 0.8
-      moving-speed-factor: 1.0
-      rotation-speed-factor: 1.0
-
+      slippery-wheels-threshold: 0.5
+      moving-speed-factor: 0.98
+      rotation-speed-factor: 0.98
+      
   comm:
-    package-loss: 0.1
+    package-loss: 0.0
     #all peers which need the comm plugin
     # write down as follows:
     # adrresses:  ["address_1", "address_2", ...]
     # send-ports: [send_port_1, send_port_2, ...]
     # revc-ports: [recv_port_1, recv_port_2, ...]
-    addresses:  []
-    send-ports: []
-    recv-ports: []
+    # refbox, robotino1, robotino2, robotino3
+    addresses:  ["127.0.0.1", "127.0.0.1", "127.0.0.1", "127.0.0.1", "127.0.0.1", "127.0.0.1", "127.0.0.1", "127.0.0.1", "127.0.0.1", "127.0.0.1"]
+    send-ports: [4445, 4411, 4412, 4413, 4414, 4415, 4416, 4417, 4418, 4419]
+    recv-ports: [4444, 4421, 4422, 4423, 4424, 4425, 4426, 4427, 4428, 4429]
+    use-crypto1: true
+    send-ports-crypto1: [4446, 4451, 4452, 4453, 4454, 4455, 4456, 4457, 4458, 4459]
+    recv-ports-crypto1: [4441, 4471, 4472, 4473, 4474, 4475, 4476, 4477, 4478, 4479]
+    use-crypto2: true
+    send-ports-crypto2: [4447, 4461, 4462, 4463, 4464, 4465, 4466, 4467, 4468, 4469]
+    recv-ports-crypto2: [4442, 4481, 4482, 4483, 4484, 4485, 4486, 4487, 4488, 4489]
+
   visualization:
     location-scripts: "model://label/materials/scripts"
     location-textures: "model://label/materials/textures"
@@ -75,9 +133,44 @@ gazsim:
       label-size: 0.3
       label-height: 0.9
 
-  depthcam:
-    topic: "~/depthcam_sensor/depthcam-pcl/"
-    width: 640
-    height: 480
-    frame: !frame kinect/depth
-    pointcloud-id: "openni-pointcloud-xyz"
+  llsf-control:
+    team-cyan-name: "Carologistics"
+    team-magenta-name: "Carologistics-2"
+    start-game-automatically: true
+    time-to-wait-before-set-team: 5.0
+    time-to-wait-before-start: 90.0
+    simulation-shutdown-after-game: true
+    time-to-wait-before-shutdown: 5.0
+    fawkes-path: "~/fawkes-robotino/" #TODO: find it in cpp source
+    simulation-shutdown-script: "bin/gazsim.bash -x kill"
+
+  llsf-statistics:
+    get-refbox-summary-script: "@BASEDIR@/etc/scripts/gazsim-get-refbox-summary.bash"
+    #these fields can be overridden by the gazsim-schedule script
+    db-name: "gazsim-runs"
+    collection: "test_14_06_16_22_00"
+    configuration-name: "default"
+    log: "~/fawkes-robotino/gazsim-logs/13_10_14_15_26/default_1"
+    run: 1
+
+  gripper:
+    if-name: "Gripper AX12"
+    arduino-if-name: "Arduino"
+    cfg-prefix: "/hardware/ax12_gripper/"
+  conveyor:
+    pose-if-name: "conveyor_pose/pose"
+    switch-if-name: "conveyor_pose/switch"
+    config-if-name: "conveyor_pose/config"
+    frame: "cam_conveyor"
+
+  tag-vision:
+    tag-if-name-prefix: "/tag-vision/"
+    info-if-name: "/tag-vision/info"
+    number-interfaces: 16
+    visibility-history-increase-per-update: 30
+    frame: !frame gazsim_tag_vision
+
+  navgraph-generator:
+    all-active-tags: ["~/tag_65/gazsim/gps/","~/tag_01/gazsim/gps/","~/tag_17/gazsim/gps/","~/tag_33/gazsim/gps/","~/tag_177/gazsim/gps/","~/tag_81/gazsim/gps/","~/tag_161/gazsim/gps/","~/tag_97/gazsim/gps/","~/tag_113/gazsim/gps/","~/tag_129/gazsim/gps/","~/tag_145/gazsim/gps/","~/tag_49/gazsim/gps/"]
+    related-mps: ["C-BS","C-CS1","C-CS2","C-RS1","C-RS2","C-DS","M-BS","M-CS1","M-CS2","M-RS1","M-RS2","M-DS"]
+    nav-gen-if-name: "/navgraph-generator-mps"
