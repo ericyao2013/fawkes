@@ -126,6 +126,27 @@ NavGraphThread::init()
     graph_ = LockPtr<NavGraph>(new NavGraph("generated"), /* recursive mutex */ true);
   }
 
+  //Launch NavgraphListener
+  //
+  graphListener = new BlackboardGraphListener(graph_, blackboard);
+  graph_->add_change_listener(graphListener);
+
+  //Dump Graph to Blackboard
+  //
+  //
+  /*std::vector<NavGraphNode> nodes = graph_->nodes();
+
+  std::vector<NavGraphNode>::iterator node_iterator;
+  for(node_iterator = nodes.begin(); node_iterator != nodes.end(); node_iterator++)
+  {
+    std::string node_name = node_iterator->name();
+    std::string interface_name = node_name + std::string("_position");
+    Position3DInterface* position_interface = blackboard->open_for_writing<Position3DInterface>(interface_name.c_str());
+    position_interface->set_translation(0, node_iterator->x());
+    position_interface->set_translation(1, node_iterator->y());
+    position_interface->write()
+  }*/
+
   if (! graph_->has_default_property("travel_tolerance")) {
     throw Exception("Graph must specify travel tolerance");
   }

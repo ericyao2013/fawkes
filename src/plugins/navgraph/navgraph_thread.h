@@ -37,6 +37,7 @@
 
 #include <interfaces/NavigatorInterface.h>
 #include <interfaces/NavPathInterface.h>
+#include <interfaces/Position3DInterface.h>
 
 #include <navgraph/navgraph.h>
 #include <utils/system/fam.h>
@@ -46,6 +47,54 @@
 namespace fawkes {
   class Time;
 }
+
+//BlackboardGraphListener
+//
+
+using namespace fawkes;
+using namespace navgraph;
+
+class BlackboardGraphListener : public NavGraph::ChangeListener
+{
+  private:
+    LockPtr<NavGraph> graph_;
+    BlackBoard* blackboard_;
+    std::map<std::string, Position3DInterface*> interface_map;  
+
+  public:
+
+  BlackboardGraphListener(LockPtr<NavGraph> graph, BlackBoard* blackboard) {
+    graph_ = graph;
+    blackboard_ = blackboard;
+  }
+
+  void graph_changed() throw(){
+    std::vector<NavGraphNode> nodes = graph_->nodes();
+
+    std::vector<NavGraphNode>::iterator node_iterator;
+    for(node_iterator = nodes.begin(); node_iterator != nodes.end(); node_iterator++)
+    {
+      if(node_iterator->property_as_bool(std::string("generated")) == false)
+      {
+        std::string node_name = node_iterator->name();
+        std::string interface_name = node_name + std::string("_position");
+        Position3DInterface* position_interface;
+        if(interface_map.find(interface_name) == interface_map.end()) {
+          position_interface = blackboard_->open_for_writing<Position3DInterface>(interface_name.c_str());
+          interface_map[interface_name] = position_interface;
+        } else {
+          position_interface = interface_map[interface_name];
+        }
+        
+        position_interface->set_translation(0, node_iterator->x());
+        position_interface->set_translation(1, node_iterator->y());
+        position_interface->write();
+      }
+    }
+  }
+
+};
+
 
 class NavGraphThread
 : public fawkes::Thread,
@@ -76,6 +125,10 @@ class NavGraphThread
  protected: virtual void run() { Thread::run();}
 
  private:
+  //new listener
+  //
+  BlackboardGraphListener* graphListener;
+
   bool generate_plan(std::string goal);
   bool generate_plan(std::string goal, float ori);
   bool generate_plan(float x, float y, float ori);
