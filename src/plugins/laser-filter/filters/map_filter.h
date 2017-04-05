@@ -42,6 +42,7 @@ class LaserMapFilterDataFilter : public LaserDataFilter
   map_t                   *map_;
   std::string             frame_map_;
   float                   cfg_occupied_thresh_;
+  bool                    cfg_debug_;
 
  public:
 
