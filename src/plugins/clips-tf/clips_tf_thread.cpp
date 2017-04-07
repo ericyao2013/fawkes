@@ -47,7 +47,7 @@ void
 ClipsTFThread::init()
 {
   try {
-    debug_ = config->get_bool("/clips-tf/debug");
+    debug_ = config->get_bool("/plugins/clips-tf/debug");
   } catch(...) {}
 }
 
