@@ -49,7 +49,8 @@ LaserMapFilterDataFilter::LaserMapFilterDataFilter(const std::string filter_name
                                                    fawkes::tf::Transformer *tf_listener,
                                                    fawkes::Configuration *config,
                                                    fawkes::Logger *logger)
-	: LaserDataFilter(filter_name, in_data_size, in, 1)
+        : LaserDataFilter(filter_name, in_data_size, in, 1),
+          cfg_debug_(true)
 {
   tf_listener_ = tf_listener;
   config_ = config;
@@ -57,6 +58,9 @@ LaserMapFilterDataFilter::LaserMapFilterDataFilter(const std::string filter_name
   map_ = load_map();
   frame_map_ = config_->get_string("/frames/fixed");
   cfg_occupied_thresh_ = std::numeric_limits<float>::max();
+  try {
+    cfg_debug_ = config->get_bool("/plugins/laser-filter/map/debug");
+  } catch (...) {}
 }
 
 /** loads map using amcl
@@ -112,10 +116,11 @@ LaserMapFilterDataFilter::filter()
     } catch(fawkes::tf::TransformException &e) {
       try{
         tf_listener_->lookup_transform(frame_map_.c_str(), in[a]->frame, fawkes::Time(0, 0), transform);
-        logger_->log_debug("map_filter", "Can't transform laser-data using newest tf\n(%s\t%s\t\%lf)",
-            frame_map_.c_str(), in[a]->frame.c_str(), in[a]->timestamp->in_sec());
+        if (cfg_debug_)
+          logger_->log_debug("map_filter", "Can't transform laser-data using newest tf\n(%s\t%s\t\%lf)",
+                             frame_map_.c_str(), in[a]->frame.c_str(), in[a]->timestamp->in_sec());
       } catch(fawkes::tf::TransformException &e) {
-        logger_->log_debug("map_filter", "Can't transform laser-data at all (%s -> %s)",
+        logger_->log_error("map_filter", "Can't transform laser-data at all (%s -> %s)",
                            frame_map_.c_str(), in[a]->frame.c_str());
         return;
       }
