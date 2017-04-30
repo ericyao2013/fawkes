@@ -73,11 +73,14 @@ void
 RosNavigatorThread::check_status()
 {
   if (cmd_sent_){
-    if (ac_->getState() == actionlib::SimpleClientGoalState::SUCCEEDED) {
+
+    if (ac_->getState() == actionlib::SimpleClientGoalState::SUCCEEDED || 
+        ac_->getState() == actionlib::SimpleClientGoalState::PREEMPTED) {
       nav_if_->set_final(true);
       nav_if_->set_error_code(0);
     }
     else if (ac_->getState() == actionlib::SimpleClientGoalState::ABORTED ||
+             ac_->getState() == actionlib::SimpleClientGoalState::LOST ||
              ac_->getState() == actionlib::SimpleClientGoalState::REJECTED)
     {
       nav_if_->set_final(true);
@@ -99,7 +102,9 @@ RosNavigatorThread::send_goal()
   goal_.target_pose.header.stamp = ros::Time::now();
   goal_.target_pose.pose.position.x = nav_if_->dest_x();
   goal_.target_pose.pose.position.y = nav_if_->dest_y();
-  fawkes::tf::Quaternion q(nav_if_->dest_ori(), 0, 0);
+  //move_base discards goals with an invalid quaternion
+  fawkes::tf::Quaternion q(std::isfinite(nav_if_->dest_ori()) ?
+                           nav_if_->dest_ori() : 0.0, 0, 0);
   goal_.target_pose.pose.orientation.x = q.x();
   goal_.target_pose.pose.orientation.y = q.y();
   goal_.target_pose.pose.orientation.z = q.z();
