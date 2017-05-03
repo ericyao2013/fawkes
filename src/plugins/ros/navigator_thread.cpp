@@ -275,8 +275,6 @@ RosNavigatorThread::load_config()
         cfg_dynreconf_rot_vel_name_ =
                 config->get_string(cfg_prefix_ + "/dynreconf/rot_vel_name");
 
-        logger->log_debug(name(), "set cfg_dynreconf_path_: %s", cfg_dynreconf_path_);
-
     } catch (Exception &e) {
         logger->log_error("Error in loading config: %s", e.what());
     }
