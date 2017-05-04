@@ -55,8 +55,11 @@ RosNavigatorThread::init()
   logger->log_error(name(),"Change Interface (x,y) ");
   cmd_sent_ = false;
   connected_history_ = false;
+
+  nav_if_->set_target_frame("/base_link");
   nav_if_->set_final(true);
   nav_if_->write();
+
   load_config();
 }
 
@@ -114,7 +117,7 @@ void
 RosNavigatorThread::send_goal()
 {
   //get goal from Navigation interface
-  goal_.target_pose.header.frame_id = "base_link";
+  goal_.target_pose.header.frame_id = nav_if_->target_frame();
   goal_.target_pose.header.stamp = ros::Time::now();
   goal_.target_pose.pose.position.x = nav_if_->dest_x();
   goal_.target_pose.pose.position.y = nav_if_->dest_y();
@@ -148,6 +151,12 @@ RosNavigatorThread::set_dynreconf_value(const std::string& path, const float val
       dynreconf_conf.doubles.clear();
       return true;
   }
+}
+
+void
+RosNavigatorThread::set_target_frame(const char * new_target_frame)
+{
+    nav_if_->set_target_frame(new_target_frame);
 }
 
 void
@@ -194,8 +203,9 @@ RosNavigatorThread::loop()
 
       // cartesian goto
       else if (NavigatorInterface::CartesianGotoMessage *msg = nav_if_->msgq_first_safe(msg)) {
-        logger->log_info(name(), "Cartesian goto message received (x,y) = (%f,%f)",
-                         msg->x(), msg->y());
+        logger->log_info(name(), "Cartesian goto message received (x,y,ori) = (%f,%f,%f)",
+                         msg->x(), msg->y(), std::isfinite(msg->orientation()) ?
+                           msg->orientation() : 0.0);
         nav_if_->set_dest_x(msg->x());
         nav_if_->set_dest_y(msg->y());
         nav_if_->set_dest_ori(msg->orientation());
@@ -254,6 +264,16 @@ RosNavigatorThread::loop()
         nav_if_->write();
 
         send_goal();
+      }
+
+      // target frame setting
+      else if (NavigatorInterface::SetTargetFrameMessage *msg = nav_if_->msgq_first_safe(msg)) {
+        logger->log_info(name(), "Set Target Frame Message received : %s", msg->target_frame());
+        nav_if_->set_target_frame(msg->target_frame());
+
+        nav_if_->set_msgid(msg->id());
+
+        nav_if_->write();
       }
 
       nav_if_->msgq_pop();
