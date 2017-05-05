@@ -34,6 +34,7 @@
 #include <tf/types.h>
 #include <math.h>
 #include <ros/ros.h>
+#include <utils/math/angle.h>
 #include <move_base_msgs/MoveBaseAction.h>
 #include <move_base_msgs/MoveBaseGoal.h>
 #include <move_base_msgs/MoveBaseActionGoal.h>
@@ -74,6 +75,11 @@ class RosNavigatorThread
 
  private:
   typedef actionlib::SimpleActionClient<move_base_msgs::MoveBaseAction> MoveBaseClient;
+  
+  void activeCb();
+  void feedbackCb(const move_base_msgs::MoveBaseFeedbackConstPtr& feedback);
+  void doneCb(const actionlib::SimpleClientGoalState& state,
+            const move_base_msgs::MoveBaseResultConstPtr& result);
 
   fawkes::NavigatorInterface *nav_if_;
   MoveBaseClient *ac_;
@@ -96,6 +102,8 @@ class RosNavigatorThread
 
   float param_max_vel;
   float param_max_rot;
+  
+  geometry_msgs::PoseStamped base_position;
 
 };
 
