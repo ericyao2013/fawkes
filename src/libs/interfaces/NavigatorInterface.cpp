@@ -113,6 +113,7 @@ NavigatorInterface::NavigatorInterface() : Interface()
   add_messageinfo("StopMessage");
   add_messageinfo("TurnMessage");
   add_messageinfo("CartesianGotoMessage");
+  add_messageinfo("CartesianGotoWithFrameMessage");
   add_messageinfo("PolarGotoMessage");
   add_messageinfo("PlaceGotoMessage");
   add_messageinfo("PlaceWithOriGotoMessage");
@@ -126,8 +127,7 @@ NavigatorInterface::NavigatorInterface() : Interface()
   add_messageinfo("SetStopAtTargetMessage");
   add_messageinfo("SetOrientationModeMessage");
   add_messageinfo("ResetParametersMessage");
-  add_messageinfo("SetTargetFrameMessage");
-  unsigned char tmp_hash[] = {00, 0xf2, 0x3b, 0x3, 0x52, 0xdb, 0xab, 0x5, 0x8b, 0x6, 0xa5, 0xef, 0x3d, 0xf5, 0x88, 0xb4};
+  unsigned char tmp_hash[] = {0xf6, 0x4a, 0xa, 0xc5, 0xe6, 0x3e, 0xe5, 0xd9, 0x89, 0x53, 0x89, 0xe8, 0xce, 0xef, 0xe0, 0xd9};
   set_hash(tmp_hash);
 }
 
@@ -741,7 +741,7 @@ NavigatorInterface::set_orientation_mode(const OrientationMode new_orientation_m
 }
 
 /** Get target_frame value.
- * The goal frame.
+ * The target frame to plan into
  * @return target_frame value
  */
 char *
@@ -761,7 +761,7 @@ NavigatorInterface::maxlenof_target_frame() const
 }
 
 /** Set target_frame value.
- * The goal frame.
+ * The target frame to plan into
  * @param new_target_frame new target_frame value
  */
 void
@@ -781,6 +781,8 @@ NavigatorInterface::create_message(const char *type) const
     return new TurnMessage();
   } else if ( strncmp("CartesianGotoMessage", type, __INTERFACE_MESSAGE_TYPE_SIZE) == 0 ) {
     return new CartesianGotoMessage();
+  } else if ( strncmp("CartesianGotoWithFrameMessage", type, __INTERFACE_MESSAGE_TYPE_SIZE) == 0 ) {
+    return new CartesianGotoWithFrameMessage();
   } else if ( strncmp("PolarGotoMessage", type, __INTERFACE_MESSAGE_TYPE_SIZE) == 0 ) {
     return new PolarGotoMessage();
   } else if ( strncmp("PlaceGotoMessage", type, __INTERFACE_MESSAGE_TYPE_SIZE) == 0 ) {
@@ -807,8 +809,6 @@ NavigatorInterface::create_message(const char *type) const
     return new SetOrientationModeMessage();
   } else if ( strncmp("ResetParametersMessage", type, __INTERFACE_MESSAGE_TYPE_SIZE) == 0 ) {
     return new ResetParametersMessage();
-  } else if ( strncmp("SetTargetFrameMessage", type, __INTERFACE_MESSAGE_TYPE_SIZE) == 0 ) {
-    return new SetTargetFrameMessage();
   } else {
     throw UnknownTypeException("The given type '%s' does not match any known "
                                "message type for this interface type.", type);
@@ -1207,6 +1207,212 @@ Message *
 NavigatorInterface::CartesianGotoMessage::clone() const
 {
   return new NavigatorInterface::CartesianGotoMessage(this);
+}
+/** @class NavigatorInterface::CartesianGotoWithFrameMessage <interfaces/NavigatorInterface.h>
+ * CartesianGotoWithFrameMessage Fawkes BlackBoard Interface Message.
+ * 
+    
+ */
+
+
+/** Constructor with initial values.
+ * @param ini_x initial value for x
+ * @param ini_y initial value for y
+ * @param ini_orientation initial value for orientation
+ * @param ini_target_frame initial value for target_frame
+ */
+NavigatorInterface::CartesianGotoWithFrameMessage::CartesianGotoWithFrameMessage(const float ini_x, const float ini_y, const float ini_orientation, const char * ini_target_frame) : Message("CartesianGotoWithFrameMessage")
+{
+  data_size = sizeof(CartesianGotoWithFrameMessage_data_t);
+  data_ptr  = malloc(data_size);
+  memset(data_ptr, 0, data_size);
+  data      = (CartesianGotoWithFrameMessage_data_t *)data_ptr;
+  data_ts   = (message_data_ts_t *)data_ptr;
+  data->x = ini_x;
+  data->y = ini_y;
+  data->orientation = ini_orientation;
+  strncpy(data->target_frame, ini_target_frame, 64);
+  enum_map_DriveMode[(int)MovingNotAllowed] = "MovingNotAllowed";
+  enum_map_DriveMode[(int)Forward] = "Forward";
+  enum_map_DriveMode[(int)AllowBackward] = "AllowBackward";
+  enum_map_DriveMode[(int)Backward] = "Backward";
+  enum_map_DriveMode[(int)ESCAPE] = "ESCAPE";
+  enum_map_OrientationMode[(int)OrientAtTarget] = "OrientAtTarget";
+  enum_map_OrientationMode[(int)OrientDuringTravel] = "OrientDuringTravel";
+  add_fieldinfo(IFT_FLOAT, "x", 1, &data->x);
+  add_fieldinfo(IFT_FLOAT, "y", 1, &data->y);
+  add_fieldinfo(IFT_FLOAT, "orientation", 1, &data->orientation);
+  add_fieldinfo(IFT_STRING, "target_frame", 64, data->target_frame);
+}
+/** Constructor */
+NavigatorInterface::CartesianGotoWithFrameMessage::CartesianGotoWithFrameMessage() : Message("CartesianGotoWithFrameMessage")
+{
+  data_size = sizeof(CartesianGotoWithFrameMessage_data_t);
+  data_ptr  = malloc(data_size);
+  memset(data_ptr, 0, data_size);
+  data      = (CartesianGotoWithFrameMessage_data_t *)data_ptr;
+  data_ts   = (message_data_ts_t *)data_ptr;
+  enum_map_DriveMode[(int)MovingNotAllowed] = "MovingNotAllowed";
+  enum_map_DriveMode[(int)Forward] = "Forward";
+  enum_map_DriveMode[(int)AllowBackward] = "AllowBackward";
+  enum_map_DriveMode[(int)Backward] = "Backward";
+  enum_map_DriveMode[(int)ESCAPE] = "ESCAPE";
+  enum_map_OrientationMode[(int)OrientAtTarget] = "OrientAtTarget";
+  enum_map_OrientationMode[(int)OrientDuringTravel] = "OrientDuringTravel";
+  add_fieldinfo(IFT_FLOAT, "x", 1, &data->x);
+  add_fieldinfo(IFT_FLOAT, "y", 1, &data->y);
+  add_fieldinfo(IFT_FLOAT, "orientation", 1, &data->orientation);
+  add_fieldinfo(IFT_STRING, "target_frame", 64, data->target_frame);
+}
+
+/** Destructor */
+NavigatorInterface::CartesianGotoWithFrameMessage::~CartesianGotoWithFrameMessage()
+{
+  free(data_ptr);
+}
+
+/** Copy constructor.
+ * @param m message to copy from
+ */
+NavigatorInterface::CartesianGotoWithFrameMessage::CartesianGotoWithFrameMessage(const CartesianGotoWithFrameMessage *m) : Message("CartesianGotoWithFrameMessage")
+{
+  data_size = m->data_size;
+  data_ptr  = malloc(data_size);
+  memcpy(data_ptr, m->data_ptr, data_size);
+  data      = (CartesianGotoWithFrameMessage_data_t *)data_ptr;
+  data_ts   = (message_data_ts_t *)data_ptr;
+}
+
+/* Methods */
+/** Get x value.
+ * X-coordinate of the target, in the robot's coordinate system.
+ * @return x value
+ */
+float
+NavigatorInterface::CartesianGotoWithFrameMessage::x() const
+{
+  return data->x;
+}
+
+/** Get maximum length of x value.
+ * @return length of x value, can be length of the array or number of 
+ * maximum number of characters for a string
+ */
+size_t
+NavigatorInterface::CartesianGotoWithFrameMessage::maxlenof_x() const
+{
+  return 1;
+}
+
+/** Set x value.
+ * X-coordinate of the target, in the robot's coordinate system.
+ * @param new_x new x value
+ */
+void
+NavigatorInterface::CartesianGotoWithFrameMessage::set_x(const float new_x)
+{
+  data->x = new_x;
+}
+
+/** Get y value.
+ * Y-coordinate of the target, in the robot's coordinate system.
+ * @return y value
+ */
+float
+NavigatorInterface::CartesianGotoWithFrameMessage::y() const
+{
+  return data->y;
+}
+
+/** Get maximum length of y value.
+ * @return length of y value, can be length of the array or number of 
+ * maximum number of characters for a string
+ */
+size_t
+NavigatorInterface::CartesianGotoWithFrameMessage::maxlenof_y() const
+{
+  return 1;
+}
+
+/** Set y value.
+ * Y-coordinate of the target, in the robot's coordinate system.
+ * @param new_y new y value
+ */
+void
+NavigatorInterface::CartesianGotoWithFrameMessage::set_y(const float new_y)
+{
+  data->y = new_y;
+}
+
+/** Get orientation value.
+ * The desired orientation of the robot at the target.
+ * @return orientation value
+ */
+float
+NavigatorInterface::CartesianGotoWithFrameMessage::orientation() const
+{
+  return data->orientation;
+}
+
+/** Get maximum length of orientation value.
+ * @return length of orientation value, can be length of the array or number of 
+ * maximum number of characters for a string
+ */
+size_t
+NavigatorInterface::CartesianGotoWithFrameMessage::maxlenof_orientation() const
+{
+  return 1;
+}
+
+/** Set orientation value.
+ * The desired orientation of the robot at the target.
+ * @param new_orientation new orientation value
+ */
+void
+NavigatorInterface::CartesianGotoWithFrameMessage::set_orientation(const float new_orientation)
+{
+  data->orientation = new_orientation;
+}
+
+/** Get target_frame value.
+ * The target frame to plan in.
+ * @return target_frame value
+ */
+char *
+NavigatorInterface::CartesianGotoWithFrameMessage::target_frame() const
+{
+  return data->target_frame;
+}
+
+/** Get maximum length of target_frame value.
+ * @return length of target_frame value, can be length of the array or number of 
+ * maximum number of characters for a string
+ */
+size_t
+NavigatorInterface::CartesianGotoWithFrameMessage::maxlenof_target_frame() const
+{
+  return 64;
+}
+
+/** Set target_frame value.
+ * The target frame to plan in.
+ * @param new_target_frame new target_frame value
+ */
+void
+NavigatorInterface::CartesianGotoWithFrameMessage::set_target_frame(const char * new_target_frame)
+{
+  strncpy(data->target_frame, new_target_frame, sizeof(data->target_frame));
+}
+
+/** Clone this message.
+ * Produces a message of the same type as this message and copies the
+ * data to the new message.
+ * @return clone of this message
+ */
+Message *
+NavigatorInterface::CartesianGotoWithFrameMessage::clone() const
+{
+  return new NavigatorInterface::CartesianGotoWithFrameMessage(this);
 }
 /** @class NavigatorInterface::PolarGotoMessage <interfaces/NavigatorInterface.h>
  * PolarGotoMessage Fawkes BlackBoard Interface Message.
@@ -2630,110 +2836,6 @@ NavigatorInterface::ResetParametersMessage::clone() const
 {
   return new NavigatorInterface::ResetParametersMessage(this);
 }
-/** @class NavigatorInterface::SetTargetFrameMessage <interfaces/NavigatorInterface.h>
- * SetTargetFrameMessage Fawkes BlackBoard Interface Message.
- * 
-    
- */
-
-
-/** Constructor with initial values.
- * @param ini_target_frame initial value for target_frame
- */
-NavigatorInterface::SetTargetFrameMessage::SetTargetFrameMessage(const char * ini_target_frame) : Message("SetTargetFrameMessage")
-{
-  data_size = sizeof(SetTargetFrameMessage_data_t);
-  data_ptr  = malloc(data_size);
-  memset(data_ptr, 0, data_size);
-  data      = (SetTargetFrameMessage_data_t *)data_ptr;
-  data_ts   = (message_data_ts_t *)data_ptr;
-  strncpy(data->target_frame, ini_target_frame, 64);
-  enum_map_DriveMode[(int)MovingNotAllowed] = "MovingNotAllowed";
-  enum_map_DriveMode[(int)Forward] = "Forward";
-  enum_map_DriveMode[(int)AllowBackward] = "AllowBackward";
-  enum_map_DriveMode[(int)Backward] = "Backward";
-  enum_map_DriveMode[(int)ESCAPE] = "ESCAPE";
-  enum_map_OrientationMode[(int)OrientAtTarget] = "OrientAtTarget";
-  enum_map_OrientationMode[(int)OrientDuringTravel] = "OrientDuringTravel";
-  add_fieldinfo(IFT_STRING, "target_frame", 64, data->target_frame);
-}
-/** Constructor */
-NavigatorInterface::SetTargetFrameMessage::SetTargetFrameMessage() : Message("SetTargetFrameMessage")
-{
-  data_size = sizeof(SetTargetFrameMessage_data_t);
-  data_ptr  = malloc(data_size);
-  memset(data_ptr, 0, data_size);
-  data      = (SetTargetFrameMessage_data_t *)data_ptr;
-  data_ts   = (message_data_ts_t *)data_ptr;
-  enum_map_DriveMode[(int)MovingNotAllowed] = "MovingNotAllowed";
-  enum_map_DriveMode[(int)Forward] = "Forward";
-  enum_map_DriveMode[(int)AllowBackward] = "AllowBackward";
-  enum_map_DriveMode[(int)Backward] = "Backward";
-  enum_map_DriveMode[(int)ESCAPE] = "ESCAPE";
-  enum_map_OrientationMode[(int)OrientAtTarget] = "OrientAtTarget";
-  enum_map_OrientationMode[(int)OrientDuringTravel] = "OrientDuringTravel";
-  add_fieldinfo(IFT_STRING, "target_frame", 64, data->target_frame);
-}
-
-/** Destructor */
-NavigatorInterface::SetTargetFrameMessage::~SetTargetFrameMessage()
-{
-  free(data_ptr);
-}
-
-/** Copy constructor.
- * @param m message to copy from
- */
-NavigatorInterface::SetTargetFrameMessage::SetTargetFrameMessage(const SetTargetFrameMessage *m) : Message("SetTargetFrameMessage")
-{
-  data_size = m->data_size;
-  data_ptr  = malloc(data_size);
-  memcpy(data_ptr, m->data_ptr, data_size);
-  data      = (SetTargetFrameMessage_data_t *)data_ptr;
-  data_ts   = (message_data_ts_t *)data_ptr;
-}
-
-/* Methods */
-/** Get target_frame value.
- * The target frame to be set.
- * @return target_frame value
- */
-char *
-NavigatorInterface::SetTargetFrameMessage::target_frame() const
-{
-  return data->target_frame;
-}
-
-/** Get maximum length of target_frame value.
- * @return length of target_frame value, can be length of the array or number of 
- * maximum number of characters for a string
- */
-size_t
-NavigatorInterface::SetTargetFrameMessage::maxlenof_target_frame() const
-{
-  return 64;
-}
-
-/** Set target_frame value.
- * The target frame to be set.
- * @param new_target_frame new target_frame value
- */
-void
-NavigatorInterface::SetTargetFrameMessage::set_target_frame(const char * new_target_frame)
-{
-  strncpy(data->target_frame, new_target_frame, sizeof(data->target_frame));
-}
-
-/** Clone this message.
- * Produces a message of the same type as this message and copies the
- * data to the new message.
- * @return clone of this message
- */
-Message *
-NavigatorInterface::SetTargetFrameMessage::clone() const
-{
-  return new NavigatorInterface::SetTargetFrameMessage(this);
-}
 /** Check if message is valid and can be enqueued.
  * @param message Message to check
  * @return true if the message is valid, false otherwise.
@@ -2753,59 +2855,59 @@ NavigatorInterface::message_valid(const Message *message) const
   if ( m2 != NULL ) {
     return true;
   }
-  const PolarGotoMessage *m3 = dynamic_cast<const PolarGotoMessage *>(message);
+  const CartesianGotoWithFrameMessage *m3 = dynamic_cast<const CartesianGotoWithFrameMessage *>(message);
   if ( m3 != NULL ) {
     return true;
   }
-  const PlaceGotoMessage *m4 = dynamic_cast<const PlaceGotoMessage *>(message);
+  const PolarGotoMessage *m4 = dynamic_cast<const PolarGotoMessage *>(message);
   if ( m4 != NULL ) {
     return true;
   }
-  const PlaceWithOriGotoMessage *m5 = dynamic_cast<const PlaceWithOriGotoMessage *>(message);
+  const PlaceGotoMessage *m5 = dynamic_cast<const PlaceGotoMessage *>(message);
   if ( m5 != NULL ) {
     return true;
   }
-  const ObstacleMessage *m6 = dynamic_cast<const ObstacleMessage *>(message);
+  const PlaceWithOriGotoMessage *m6 = dynamic_cast<const PlaceWithOriGotoMessage *>(message);
   if ( m6 != NULL ) {
     return true;
   }
-  const ResetOdometryMessage *m7 = dynamic_cast<const ResetOdometryMessage *>(message);
+  const ObstacleMessage *m7 = dynamic_cast<const ObstacleMessage *>(message);
   if ( m7 != NULL ) {
     return true;
   }
-  const SetMaxVelocityMessage *m8 = dynamic_cast<const SetMaxVelocityMessage *>(message);
+  const ResetOdometryMessage *m8 = dynamic_cast<const ResetOdometryMessage *>(message);
   if ( m8 != NULL ) {
     return true;
   }
-  const SetMaxRotationMessage *m9 = dynamic_cast<const SetMaxRotationMessage *>(message);
+  const SetMaxVelocityMessage *m9 = dynamic_cast<const SetMaxVelocityMessage *>(message);
   if ( m9 != NULL ) {
     return true;
   }
-  const SetEscapingMessage *m10 = dynamic_cast<const SetEscapingMessage *>(message);
+  const SetMaxRotationMessage *m10 = dynamic_cast<const SetMaxRotationMessage *>(message);
   if ( m10 != NULL ) {
     return true;
   }
-  const SetSecurityDistanceMessage *m11 = dynamic_cast<const SetSecurityDistanceMessage *>(message);
+  const SetEscapingMessage *m11 = dynamic_cast<const SetEscapingMessage *>(message);
   if ( m11 != NULL ) {
     return true;
   }
-  const SetDriveModeMessage *m12 = dynamic_cast<const SetDriveModeMessage *>(message);
+  const SetSecurityDistanceMessage *m12 = dynamic_cast<const SetSecurityDistanceMessage *>(message);
   if ( m12 != NULL ) {
     return true;
   }
-  const SetStopAtTargetMessage *m13 = dynamic_cast<const SetStopAtTargetMessage *>(message);
+  const SetDriveModeMessage *m13 = dynamic_cast<const SetDriveModeMessage *>(message);
   if ( m13 != NULL ) {
     return true;
   }
-  const SetOrientationModeMessage *m14 = dynamic_cast<const SetOrientationModeMessage *>(message);
+  const SetStopAtTargetMessage *m14 = dynamic_cast<const SetStopAtTargetMessage *>(message);
   if ( m14 != NULL ) {
     return true;
   }
-  const ResetParametersMessage *m15 = dynamic_cast<const ResetParametersMessage *>(message);
+  const SetOrientationModeMessage *m15 = dynamic_cast<const SetOrientationModeMessage *>(message);
   if ( m15 != NULL ) {
     return true;
   }
-  const SetTargetFrameMessage *m16 = dynamic_cast<const SetTargetFrameMessage *>(message);
+  const ResetParametersMessage *m16 = dynamic_cast<const ResetParametersMessage *>(message);
   if ( m16 != NULL ) {
     return true;
   }

@@ -103,7 +103,7 @@
 
     <field type="bool" name="stop_at_target">Stop when target is reached?</field>
     <field type="OrientationMode" name="orientation_mode">Mode how/when to orientate if orientation is given</field>
-    <field type="string" length="64" name="target_frame">The goal frame.</field>
+    <field type="string" length="64" name="target_frame">The target frame to plan into</field>
   </data>
   <message name="Stop">
     <comment>Stop motion immediately.</comment>
@@ -121,6 +121,13 @@
     <field type="float" name="x">X-coordinate of the target, in the robot's coordinate system.</field>
     <field type="float" name="y">Y-coordinate of the target, in the robot's coordinate system.</field>
     <field type="float" name="orientation">The desired orientation of the robot at the target.</field>
+  </message>
+  <message name="CartesianGotoWithFrame">
+    <comment>States the next target to navigate to.</comment>
+    <field type="float" name="x">X-coordinate of the target, in the robot's coordinate system.</field>
+    <field type="float" name="y">Y-coordinate of the target, in the robot's coordinate system.</field>
+    <field type="float" name="orientation">The desired orientation of the robot at the target.</field>
+    <field type="string" length="64" name="target_frame">The target frame to plan in.</field>
   </message>
   <message name="PolarGoto">
     <comment>States the next target to navigate to.</comment>
@@ -176,9 +183,5 @@
   </message>
   <message name="ResetParameters">
     <comment>Reset the settable parameters to default values.</comment>
-  </message>
-  <message name="SetTargetFrame">
-    <comment>Sets the target_frame-field. Used as a planning reference.</comment>
-    <field type="string" length="64" name="target_frame">The target frame to be set.</field>
   </message>
 </interface>

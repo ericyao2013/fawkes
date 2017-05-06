@@ -55,11 +55,8 @@ RosNavigatorThread::init()
   logger->log_error(name(),"Change Interface (x,y) ");
   cmd_sent_ = false;
   connected_history_ = false;
-
-  nav_if_->set_target_frame("/base_link");
   nav_if_->set_final(true);
   nav_if_->write();
-
   load_config();
 }
 
@@ -203,12 +200,6 @@ RosNavigatorThread::set_dynreconf_value(const std::string& path, const float val
 }
 
 void
-RosNavigatorThread::set_target_frame(const char * new_target_frame)
-{
-    nav_if_->set_target_frame(new_target_frame);
-}
-
-void
 RosNavigatorThread::stop_goals()
 {
   //cancel all existing goals and send Goal={0/0/0}
@@ -258,6 +249,24 @@ RosNavigatorThread::loop()
         nav_if_->set_dest_x(msg->x());
         nav_if_->set_dest_y(msg->y());
         nav_if_->set_dest_ori(msg->orientation());
+        nav_if_->set_target_frame("base_link");
+
+        nav_if_->set_msgid(msg->id());
+
+        nav_if_->write();
+
+        send_goal();
+      }
+
+      // cartesian goto
+      else if (NavigatorInterface::CartesianGotoWithFrameMessage *msg = nav_if_->msgq_first_safe(msg)) {
+        logger->log_info(name(), "Cartesian goto message received (x,y,ori) = (%f,%f,%f)",
+                         msg->x(), msg->y(), std::isfinite(msg->orientation()) ?
+                           msg->orientation() : 0.0);
+        nav_if_->set_dest_x(msg->x());
+        nav_if_->set_dest_y(msg->y());
+        nav_if_->set_dest_ori(msg->orientation());
+        nav_if_->set_target_frame(msg->target_frame());
 
         nav_if_->set_msgid(msg->id());
 
@@ -313,16 +322,6 @@ RosNavigatorThread::loop()
         nav_if_->write();
 
         send_goal();
-      }
-
-      // target frame setting
-      else if (NavigatorInterface::SetTargetFrameMessage *msg = nav_if_->msgq_first_safe(msg)) {
-        logger->log_info(name(), "Set Target Frame Message received : %s", msg->target_frame());
-        nav_if_->set_target_frame(msg->target_frame());
-
-        nav_if_->set_msgid(msg->id());
-
-        nav_if_->write();
       }
 
       nav_if_->msgq_pop();
