@@ -88,7 +88,7 @@ class NavigatorInterface : public Interface
 
   class CartesianGotoMessage : public Message
   {
-    CartesianGotoMessage(float ini_x, float ini_y, float ini_orientation);
+    CartesianGotoMessage(float ini_x, float ini_y, float ini_orientation, char * ini_target_frame);
     CartesianGotoMessage();
     ~CartesianGotoMessage();
 
@@ -118,6 +118,9 @@ class NavigatorInterface : public Interface
     float orientation();
     void set_orientation(const float new_orientation);
     int maxlenof_orientation() const;
+    char * target_frame();
+    void set_target_frame(const char * new_target_frame);
+    int maxlenof_target_frame() const;
   };
 
   class PolarGotoMessage : public Message
