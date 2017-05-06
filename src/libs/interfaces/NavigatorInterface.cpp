@@ -125,7 +125,7 @@ NavigatorInterface::NavigatorInterface() : Interface()
   add_messageinfo("SetStopAtTargetMessage");
   add_messageinfo("SetOrientationModeMessage");
   add_messageinfo("ResetParametersMessage");
-  unsigned char tmp_hash[] = {0x8, 0x23, 0xd3, 0x6a, 0x9, 0x8d, 0xce, 0x56, 0xb1, 0x32, 0xb6, 0x47, 0xe5, 0xac, 0x1f, 0xe7};
+  unsigned char tmp_hash[] = {0x44, 0x8, 0x67, 0xd0, 0x2d, 0xf0, 0x41, 0xe7, 0x78, 0x46, 0x10, 0xda, 0x85, 0x81, 0x1f, 0x32};
   set_hash(tmp_hash);
 }
 
@@ -1012,9 +1012,8 @@ NavigatorInterface::TurnMessage::clone() const
  * @param ini_x initial value for x
  * @param ini_y initial value for y
  * @param ini_orientation initial value for orientation
- * @param ini_target_frame initial value for target_frame
  */
-NavigatorInterface::CartesianGotoMessage::CartesianGotoMessage(const float ini_x, const float ini_y, const float ini_orientation, const char * ini_target_frame) : Message("CartesianGotoMessage")
+NavigatorInterface::CartesianGotoMessage::CartesianGotoMessage(const float ini_x, const float ini_y, const float ini_orientation) : Message("CartesianGotoMessage")
 {
   data_size = sizeof(CartesianGotoMessage_data_t);
   data_ptr  = malloc(data_size);
@@ -1024,7 +1023,6 @@ NavigatorInterface::CartesianGotoMessage::CartesianGotoMessage(const float ini_x
   data->x = ini_x;
   data->y = ini_y;
   data->orientation = ini_orientation;
-  strncpy(data->target_frame, ini_target_frame, 64);
   enum_map_DriveMode[(int)MovingNotAllowed] = "MovingNotAllowed";
   enum_map_DriveMode[(int)Forward] = "Forward";
   enum_map_DriveMode[(int)AllowBackward] = "AllowBackward";
@@ -1035,7 +1033,6 @@ NavigatorInterface::CartesianGotoMessage::CartesianGotoMessage(const float ini_x
   add_fieldinfo(IFT_FLOAT, "x", 1, &data->x);
   add_fieldinfo(IFT_FLOAT, "y", 1, &data->y);
   add_fieldinfo(IFT_FLOAT, "orientation", 1, &data->orientation);
-  add_fieldinfo(IFT_STRING, "target_frame", 64, data->target_frame);
 }
 /** Constructor */
 NavigatorInterface::CartesianGotoMessage::CartesianGotoMessage() : Message("CartesianGotoMessage")
@@ -1055,7 +1052,6 @@ NavigatorInterface::CartesianGotoMessage::CartesianGotoMessage() : Message("Cart
   add_fieldinfo(IFT_FLOAT, "x", 1, &data->x);
   add_fieldinfo(IFT_FLOAT, "y", 1, &data->y);
   add_fieldinfo(IFT_FLOAT, "orientation", 1, &data->orientation);
-  add_fieldinfo(IFT_STRING, "target_frame", 64, data->target_frame);
 }
 
 /** Destructor */
@@ -1165,36 +1161,6 @@ void
 NavigatorInterface::CartesianGotoMessage::set_orientation(const float new_orientation)
 {
   data->orientation = new_orientation;
-}
-
-/** Get target_frame value.
- * The target frame to plan in.
- * @return target_frame value
- */
-char *
-NavigatorInterface::CartesianGotoMessage::target_frame() const
-{
-  return data->target_frame;
-}
-
-/** Get maximum length of target_frame value.
- * @return length of target_frame value, can be length of the array or number of 
- * maximum number of characters for a string
- */
-size_t
-NavigatorInterface::CartesianGotoMessage::maxlenof_target_frame() const
-{
-  return 64;
-}
-
-/** Set target_frame value.
- * The target frame to plan in.
- * @param new_target_frame new target_frame value
- */
-void
-NavigatorInterface::CartesianGotoMessage::set_target_frame(const char * new_target_frame)
-{
-  strncpy(data->target_frame, new_target_frame, sizeof(data->target_frame));
 }
 
 /** Clone this message.

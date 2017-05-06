@@ -170,7 +170,6 @@ class NavigatorInterface : public Interface
       float x; /**< X-coordinate of the target, in the robot's coordinate system. */
       float y; /**< Y-coordinate of the target, in the robot's coordinate system. */
       float orientation; /**< The desired orientation of the robot at the target. */
-      char target_frame[64]; /**< The target frame to plan in. */
     } CartesianGotoMessage_data_t;
 
     CartesianGotoMessage_data_t *data;
@@ -178,7 +177,7 @@ class NavigatorInterface : public Interface
   interface_enum_map_t enum_map_DriveMode;
   interface_enum_map_t enum_map_OrientationMode;
    public:
-    CartesianGotoMessage(const float ini_x, const float ini_y, const float ini_orientation, const char * ini_target_frame);
+    CartesianGotoMessage(const float ini_x, const float ini_y, const float ini_orientation);
     CartesianGotoMessage();
     ~CartesianGotoMessage();
 
@@ -193,9 +192,6 @@ class NavigatorInterface : public Interface
     float orientation() const;
     void set_orientation(const float new_orientation);
     size_t maxlenof_orientation() const;
-    char * target_frame() const;
-    void set_target_frame(const char * new_target_frame);
-    size_t maxlenof_target_frame() const;
     virtual Message * clone() const;
   };
 

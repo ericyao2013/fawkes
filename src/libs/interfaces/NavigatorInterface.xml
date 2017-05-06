@@ -120,7 +120,6 @@
     <field type="float" name="x">X-coordinate of the target, in the robot's coordinate system.</field>
     <field type="float" name="y">Y-coordinate of the target, in the robot's coordinate system.</field>
     <field type="float" name="orientation">The desired orientation of the robot at the target.</field>
-    <field type="string" length="64" name="target_frame" default="/base_link">The target frame to plan in.</field>
   </message>
   <message name="PolarGoto">
     <comment>States the next target to navigate to.</comment>
