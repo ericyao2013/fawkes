@@ -71,7 +71,6 @@ class RosNavigatorThread
   void stop_goals();
   void load_config();
   bool set_dynreconf_value(const std::string& path, const float value);
-  void set_target_frame(const char * new_target_frame);
 
  private:
   typedef actionlib::SimpleActionClient<move_base_msgs::MoveBaseAction> MoveBaseClient;
