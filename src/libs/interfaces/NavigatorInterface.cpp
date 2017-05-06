@@ -109,7 +109,6 @@ NavigatorInterface::NavigatorInterface() : Interface()
   add_fieldinfo(IFT_BOOL, "auto_drive_mode", 1, &data->auto_drive_mode);
   add_fieldinfo(IFT_BOOL, "stop_at_target", 1, &data->stop_at_target);
   add_fieldinfo(IFT_ENUM, "orientation_mode", 1, &data->orientation_mode, "OrientationMode", &enum_map_OrientationMode);
-  add_fieldinfo(IFT_STRING, "target_frame", 64, data->target_frame);
   add_messageinfo("StopMessage");
   add_messageinfo("TurnMessage");
   add_messageinfo("CartesianGotoMessage");
@@ -126,8 +125,7 @@ NavigatorInterface::NavigatorInterface() : Interface()
   add_messageinfo("SetStopAtTargetMessage");
   add_messageinfo("SetOrientationModeMessage");
   add_messageinfo("ResetParametersMessage");
-  add_messageinfo("SetTargetFrameMessage");
-  unsigned char tmp_hash[] = {00, 0xf2, 0x3b, 0x3, 0x52, 0xdb, 0xab, 0x5, 0x8b, 0x6, 0xa5, 0xef, 0x3d, 0xf5, 0x88, 0xb4};
+  unsigned char tmp_hash[] = {0x44, 0x8, 0x67, 0xd0, 0x2d, 0xf0, 0x41, 0xe7, 0x78, 0x46, 0x10, 0xda, 0x85, 0x81, 0x1f, 0x32};
   set_hash(tmp_hash);
 }
 
@@ -740,37 +738,6 @@ NavigatorInterface::set_orientation_mode(const OrientationMode new_orientation_m
   data_changed = true;
 }
 
-/** Get target_frame value.
- * The goal frame.
- * @return target_frame value
- */
-char *
-NavigatorInterface::target_frame() const
-{
-  return data->target_frame;
-}
-
-/** Get maximum length of target_frame value.
- * @return length of target_frame value, can be length of the array or number of 
- * maximum number of characters for a string
- */
-size_t
-NavigatorInterface::maxlenof_target_frame() const
-{
-  return 64;
-}
-
-/** Set target_frame value.
- * The goal frame.
- * @param new_target_frame new target_frame value
- */
-void
-NavigatorInterface::set_target_frame(const char * new_target_frame)
-{
-  strncpy(data->target_frame, new_target_frame, sizeof(data->target_frame));
-  data_changed = true;
-}
-
 /* =========== message create =========== */
 Message *
 NavigatorInterface::create_message(const char *type) const
@@ -807,8 +774,6 @@ NavigatorInterface::create_message(const char *type) const
     return new SetOrientationModeMessage();
   } else if ( strncmp("ResetParametersMessage", type, __INTERFACE_MESSAGE_TYPE_SIZE) == 0 ) {
     return new ResetParametersMessage();
-  } else if ( strncmp("SetTargetFrameMessage", type, __INTERFACE_MESSAGE_TYPE_SIZE) == 0 ) {
-    return new SetTargetFrameMessage();
   } else {
     throw UnknownTypeException("The given type '%s' does not match any known "
                                "message type for this interface type.", type);
@@ -2630,110 +2595,6 @@ NavigatorInterface::ResetParametersMessage::clone() const
 {
   return new NavigatorInterface::ResetParametersMessage(this);
 }
-/** @class NavigatorInterface::SetTargetFrameMessage <interfaces/NavigatorInterface.h>
- * SetTargetFrameMessage Fawkes BlackBoard Interface Message.
- * 
-    
- */
-
-
-/** Constructor with initial values.
- * @param ini_target_frame initial value for target_frame
- */
-NavigatorInterface::SetTargetFrameMessage::SetTargetFrameMessage(const char * ini_target_frame) : Message("SetTargetFrameMessage")
-{
-  data_size = sizeof(SetTargetFrameMessage_data_t);
-  data_ptr  = malloc(data_size);
-  memset(data_ptr, 0, data_size);
-  data      = (SetTargetFrameMessage_data_t *)data_ptr;
-  data_ts   = (message_data_ts_t *)data_ptr;
-  strncpy(data->target_frame, ini_target_frame, 64);
-  enum_map_DriveMode[(int)MovingNotAllowed] = "MovingNotAllowed";
-  enum_map_DriveMode[(int)Forward] = "Forward";
-  enum_map_DriveMode[(int)AllowBackward] = "AllowBackward";
-  enum_map_DriveMode[(int)Backward] = "Backward";
-  enum_map_DriveMode[(int)ESCAPE] = "ESCAPE";
-  enum_map_OrientationMode[(int)OrientAtTarget] = "OrientAtTarget";
-  enum_map_OrientationMode[(int)OrientDuringTravel] = "OrientDuringTravel";
-  add_fieldinfo(IFT_STRING, "target_frame", 64, data->target_frame);
-}
-/** Constructor */
-NavigatorInterface::SetTargetFrameMessage::SetTargetFrameMessage() : Message("SetTargetFrameMessage")
-{
-  data_size = sizeof(SetTargetFrameMessage_data_t);
-  data_ptr  = malloc(data_size);
-  memset(data_ptr, 0, data_size);
-  data      = (SetTargetFrameMessage_data_t *)data_ptr;
-  data_ts   = (message_data_ts_t *)data_ptr;
-  enum_map_DriveMode[(int)MovingNotAllowed] = "MovingNotAllowed";
-  enum_map_DriveMode[(int)Forward] = "Forward";
-  enum_map_DriveMode[(int)AllowBackward] = "AllowBackward";
-  enum_map_DriveMode[(int)Backward] = "Backward";
-  enum_map_DriveMode[(int)ESCAPE] = "ESCAPE";
-  enum_map_OrientationMode[(int)OrientAtTarget] = "OrientAtTarget";
-  enum_map_OrientationMode[(int)OrientDuringTravel] = "OrientDuringTravel";
-  add_fieldinfo(IFT_STRING, "target_frame", 64, data->target_frame);
-}
-
-/** Destructor */
-NavigatorInterface::SetTargetFrameMessage::~SetTargetFrameMessage()
-{
-  free(data_ptr);
-}
-
-/** Copy constructor.
- * @param m message to copy from
- */
-NavigatorInterface::SetTargetFrameMessage::SetTargetFrameMessage(const SetTargetFrameMessage *m) : Message("SetTargetFrameMessage")
-{
-  data_size = m->data_size;
-  data_ptr  = malloc(data_size);
-  memcpy(data_ptr, m->data_ptr, data_size);
-  data      = (SetTargetFrameMessage_data_t *)data_ptr;
-  data_ts   = (message_data_ts_t *)data_ptr;
-}
-
-/* Methods */
-/** Get target_frame value.
- * The target frame to be set.
- * @return target_frame value
- */
-char *
-NavigatorInterface::SetTargetFrameMessage::target_frame() const
-{
-  return data->target_frame;
-}
-
-/** Get maximum length of target_frame value.
- * @return length of target_frame value, can be length of the array or number of 
- * maximum number of characters for a string
- */
-size_t
-NavigatorInterface::SetTargetFrameMessage::maxlenof_target_frame() const
-{
-  return 64;
-}
-
-/** Set target_frame value.
- * The target frame to be set.
- * @param new_target_frame new target_frame value
- */
-void
-NavigatorInterface::SetTargetFrameMessage::set_target_frame(const char * new_target_frame)
-{
-  strncpy(data->target_frame, new_target_frame, sizeof(data->target_frame));
-}
-
-/** Clone this message.
- * Produces a message of the same type as this message and copies the
- * data to the new message.
- * @return clone of this message
- */
-Message *
-NavigatorInterface::SetTargetFrameMessage::clone() const
-{
-  return new NavigatorInterface::SetTargetFrameMessage(this);
-}
 /** Check if message is valid and can be enqueued.
  * @param message Message to check
  * @return true if the message is valid, false otherwise.
@@ -2803,10 +2664,6 @@ NavigatorInterface::message_valid(const Message *message) const
   }
   const ResetParametersMessage *m15 = dynamic_cast<const ResetParametersMessage *>(message);
   if ( m15 != NULL ) {
-    return true;
-  }
-  const SetTargetFrameMessage *m16 = dynamic_cast<const SetTargetFrameMessage *>(message);
-  if ( m16 != NULL ) {
     return true;
   }
   return false;

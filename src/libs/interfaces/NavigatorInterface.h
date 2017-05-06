@@ -98,7 +98,6 @@ class NavigatorInterface : public Interface
       a SetAutoDriveMode-message (otherwise the navigator might ignore that value). */
     bool stop_at_target; /**< Stop when target is reached? */
     int32_t orientation_mode; /**< Mode how/when to orientate if orientation is given */
-    char target_frame[64]; /**< The goal frame. */
   } NavigatorInterface_data_t;
 
   NavigatorInterface_data_t *data;
@@ -558,33 +557,6 @@ class NavigatorInterface : public Interface
     virtual Message * clone() const;
   };
 
-  class SetTargetFrameMessage : public Message
-  {
-   private:
-    /** Internal data storage, do NOT modify! */
-    typedef struct __attribute__((packed)) {
-      int64_t timestamp_sec;  /**< Interface Unix timestamp, seconds */
-      int64_t timestamp_usec; /**< Interface Unix timestamp, micro-seconds */
-      char target_frame[64]; /**< The target frame to be set. */
-    } SetTargetFrameMessage_data_t;
-
-    SetTargetFrameMessage_data_t *data;
-
-  interface_enum_map_t enum_map_DriveMode;
-  interface_enum_map_t enum_map_OrientationMode;
-   public:
-    SetTargetFrameMessage(const char * ini_target_frame);
-    SetTargetFrameMessage();
-    ~SetTargetFrameMessage();
-
-    SetTargetFrameMessage(const SetTargetFrameMessage *m);
-    /* Methods */
-    char * target_frame() const;
-    void set_target_frame(const char * new_target_frame);
-    size_t maxlenof_target_frame() const;
-    virtual Message * clone() const;
-  };
-
   virtual bool message_valid(const Message *message) const;
  private:
   NavigatorInterface();
@@ -646,9 +618,6 @@ class NavigatorInterface : public Interface
   OrientationMode orientation_mode() const;
   void set_orientation_mode(const OrientationMode new_orientation_mode);
   size_t maxlenof_orientation_mode() const;
-  char * target_frame() const;
-  void set_target_frame(const char * new_target_frame);
-  size_t maxlenof_target_frame() const;
   virtual Message * create_message(const char *type) const;
 
   virtual void copy_values(const Interface *other);

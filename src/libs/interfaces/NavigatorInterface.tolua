@@ -491,34 +491,6 @@ class NavigatorInterface : public Interface
 
   };
 
-  class SetTargetFrameMessage : public Message
-  {
-    SetTargetFrameMessage(char * ini_target_frame);
-    SetTargetFrameMessage();
-    ~SetTargetFrameMessage();
-
-    unsigned int      id() const;
-
-    unsigned int      sender_id() const;
-    const char *      sender_thread_name() const;
-    Interface *       interface() const;
-    const char *      type() const;
-
-    const void *      datachunk() const;
-    unsigned int      datasize() const;
-
-    void              set_from_chunk(const void *chunk);
-
-    /* from RefCount */
-    void              ref();
-    void              unref();
-    unsigned int      refcount();
-
-    char * target_frame();
-    void set_target_frame(const char * new_target_frame);
-    int maxlenof_target_frame() const;
-  };
-
   unsigned int flags();
   void set_flags(const unsigned int new_flags);
   int maxlenof_flags() const;
@@ -573,9 +545,6 @@ class NavigatorInterface : public Interface
   OrientationMode orientation_mode();
   void set_orientation_mode(const OrientationMode new_orientation_mode);
   int maxlenof_orientation_mode() const;
-  char * target_frame();
-  void set_target_frame(const char * new_target_frame);
-  int maxlenof_target_frame() const;
   bool                    oftype(const char *interface_type) const;
   const void *            datachunk() const;
   unsigned int            datasize() const;

@@ -103,7 +103,6 @@
 
     <field type="bool" name="stop_at_target">Stop when target is reached?</field>
     <field type="OrientationMode" name="orientation_mode">Mode how/when to orientate if orientation is given</field>
-    <field type="string" length="64" name="target_frame">The goal frame.</field>
   </data>
   <message name="Stop">
     <comment>Stop motion immediately.</comment>
@@ -176,9 +175,5 @@
   </message>
   <message name="ResetParameters">
     <comment>Reset the settable parameters to default values.</comment>
-  </message>
-  <message name="SetTargetFrame">
-    <comment>Sets the target_frame-field. Used as a planning reference.</comment>
-    <field type="string" length="64" name="target_frame">The target frame to be set.</field>
   </message>
 </interface>
