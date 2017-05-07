@@ -27,7 +27,7 @@ SUBDIRS	= bbsync bblogger webview ttmainloop rrd rrdweb \
 	  clips clips-agent clips-protobuf clips-webview clips-navgraph clips-ros \
 	  clips-tf openprs openprs-agent eclipse-clp \
 	  mongodb mongodb_log robot-memory clips-robot-memory pddl-robot-memory \
-	  openrave-robot-memory openni refboxcomm ros player xmlrpc gossip \
+	  openrave-robot-memory openni realsense refboxcomm ros player xmlrpc gossip \
 	  robot_state_publisher gazebo dynamixel navgraph-interactive \
 	  pddl-planner
 
