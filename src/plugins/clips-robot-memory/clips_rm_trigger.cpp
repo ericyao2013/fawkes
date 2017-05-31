@@ -22,9 +22,18 @@
 #include "clips_rm_trigger.h"
 #include <clipsmm.h>
 
+#include <core/threading/mutex_locker.h>
+
 using namespace fawkes;
 using namespace mongo;
 
+/**
+ * Constructor with references to objects of the plugin
+ * @param assert_name String used to identify this trigger in resulting facts
+ * @param robot_memory Robot Memory
+ * @param clips Clips environment
+ * @param logger Logger
+ */
 ClipsRmTrigger::ClipsRmTrigger(std::string assert_name, RobotMemory *robot_memory,
   LockPtr<CLIPS::Environment> &clips, fawkes::Logger *logger)
 {
@@ -42,6 +51,10 @@ ClipsRmTrigger::~ClipsRmTrigger()
   }
 }
 
+/**
+ * Set the trigger object given by the robot memory
+ * @param trigger Trigger
+ */
 void ClipsRmTrigger::set_trigger(EventTrigger *trigger)
 {
   this->trigger = trigger;
@@ -54,6 +67,7 @@ void ClipsRmTrigger::set_trigger(EventTrigger *trigger)
  */
 void ClipsRmTrigger::callback(mongo::BSONObj update)
 {
+  MutexLocker locker(clips.objmutex_ptr());
   clips->assert_fact_f("( %s)", assert_name.c_str());
   CLIPS::Template::pointer temp = clips->get_template("robmem-trigger");
   if (temp) {

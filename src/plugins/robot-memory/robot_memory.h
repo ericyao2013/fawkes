@@ -44,6 +44,7 @@ typedef std::unique_ptr<mongo::DBClientCursor> QResCursor;
 
 class RobotMemory
 {
+  /// Friend the RobotMemoryThread so that only it can access the loop and init functions
   friend class RobotMemoryThread;
 
   public:
@@ -54,12 +55,15 @@ class RobotMemory
 
     //robot memory functions
     QResCursor query(mongo::Query query, std::string collection = "");
+    mongo::BSONObj aggregate(std::vector<mongo::BSONObj> pipeline, std::string collection = "");
     int insert(mongo::BSONObj obj, std::string collection = "");
     int insert(std::vector<mongo::BSONObj> v_obj, std::string collection = "");
     int insert(std::string obj_str, std::string collection = "");
     int update(mongo::Query query, mongo::BSONObj update, std::string collection = "", bool upsert = false);
     int update(mongo::Query query, std::string update_str, std::string collection = "", bool upsert = false);
     int remove(mongo::Query query, std::string collection = "");
+    mongo::BSONObj mapreduce(mongo::Query query, std::string collection, std::string js_map_fun, std::string js_reduce_fun);
+    QResCursor aggregate(mongo::BSONObj pipeline, std::string collection = "");
     int drop_collection(std::string collection);
     int clear_memory();
     int restore_collection(std::string collection, std::string directory = "@CONFDIR@/robot-memory");
@@ -102,6 +106,8 @@ class RobotMemory
      * @param collection db.collection to fill with computed information
      * @param compute_func Callback function that computes the information and retruns a list of computed documents
      * @param obj Pointer to class the callback is a function of (usaually this)
+     * @param caching_time How long should computed results for a query be cached and be used for identical queries in that time?
+     * @param priority Computable priority ordering the evaluation
      * @return Computable Object pointer used for removing it
      */
     template<typename T>

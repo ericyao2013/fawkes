@@ -129,17 +129,28 @@ TEST_F(RobotMemoryTest, RemoveInvalidCaught)
 
 TEST_F(RobotMemoryTest, AggregationQuery)
 {
-  //TODO: implement
-}
+  ASSERT_TRUE(robot_memory->insert("{'agg':'summand',value:0.5}"));
+  ASSERT_TRUE(robot_memory->insert("{'agg':'summand',value:0.7}"));
+  ASSERT_TRUE(robot_memory->insert("{'agg':'not-summand',value:0.9}"));
 
-TEST_F(RobotMemoryTest, MapReduceQuery)
-{
-  //TODO: implement
+  std::vector<BSONObj> pipeline;
+  pipeline.push_back(fromjson("{'$match': {'agg':'summand'}}"));
+  pipeline.push_back(fromjson("{'$group': {'_id': null, 'total': {'$sum': '$value'}}}"));
+  BSONObj res = robot_memory->aggregate(pipeline);
+  ASSERT_TRUE(contains_pairs(res.getField("result").Array()[0].Obj(), fromjson("{'total':1.2}")));
 }
 
 TEST_F(RobotMemoryTest, JavaScriptQuery)
 {
-  //TODO: implement
+  ASSERT_TRUE(robot_memory->insert("{'testname':'js-query',a:1,b:2}"));
+  ASSERT_TRUE(robot_memory->insert("{'testname':'js-query',a:2,b:4}"));
+  ASSERT_TRUE(robot_memory->insert("{'testname':'js-query',a:3,b:5}"));
+  QResCursor qres = robot_memory->query("{'testname':'js-query', $where: \"return obj.a * 2 == obj.b\"}");
+  ASSERT_TRUE(qres->more());
+  qres->next();
+  ASSERT_TRUE(qres->more());
+  qres->next();
+  ASSERT_FALSE(qres->more());
 }
 
 TEST_F(RobotMemoryTest, DumpAndResore)
@@ -212,6 +223,12 @@ TEST_F(RobotMemoryTest, EventTriggerReplica)
   robot_memory->remove_trigger(trigger2);
 }
 
+/**
+ * Function for testing if a document contains all key-value pairs of another document
+ * @param obj Document that should be tested
+ * @param exp Document containing all expected key-value pairs
+ * @return Assertion Result
+ */
 ::testing::AssertionResult RobotMemoryTest::contains_pairs(BSONObj obj, BSONObj exp)
 {
   for(BSONObjIterator it = exp.begin(); it.more();)
@@ -226,6 +243,33 @@ TEST_F(RobotMemoryTest, EventTriggerReplica)
     }
   }
   return ::testing::AssertionSuccess();
+}
+
+TEST_F(RobotMemoryTest, MapReduceQuery)
+{
+  //Test sums up the amount of ordered products
+  ASSERT_TRUE(robot_memory->insert("{'testname':'mapreduce',order:1, product:1, amount:1}", "robmem.test"));
+  ASSERT_TRUE(robot_memory->insert("{'testname':'mapreduce',order:2, product:1, amount:2}", "robmem.test"));
+  ASSERT_TRUE(robot_memory->insert("{'testname':'mapreduce',order:3, product:2, amount:3}", "robmem.test"));
+  ASSERT_TRUE(robot_memory->insert("{'testname':'mapreduce',order:4, product:2, amount:4}", "robmem.test"));
+  ASSERT_TRUE(robot_memory->insert("{'testname':'not mapreduce',order:1, product:1, amount:2}"));
+  BSONObj res = robot_memory->mapreduce(fromjson("{'testname':'mapreduce'}"), "robmem.test",
+      "function() { emit( this.product, this.amount);}",
+      "function(key, values) { return Array.sum( values )}");
+  ASSERT_TRUE(contains_pairs(res, fromjson("{ok: 1.0, results:[{_id:1.0, value:3.0}, {_id:2.0, value: 7.0}]}")));
+}
+
+TEST_F(RobotMemoryTest, AggregationQuery)
+{
+  //Test finds maximum with aggregation
+  ASSERT_TRUE(robot_memory->insert("{'testname':'agg', v:1}", "robmem.test"));
+  ASSERT_TRUE(robot_memory->insert("{'testname':'agg', v:333}", "robmem.test"));
+  ASSERT_TRUE(robot_memory->insert("{'testname':'agg', v:-20}", "robmem.test"));
+  ASSERT_TRUE(robot_memory->insert("{'testname':'not agg', v:666}", "robmem.test"));
+  QResCursor qres = robot_memory->aggregate(
+      fromjson("[{$match:{testname:'agg'}}, {$group: {_id:null, max:{$max: '$v'}}}]"), "robmem.test");
+  ASSERT_TRUE(qres->more());
+  ASSERT_TRUE(contains_pairs(qres->next(), fromjson("{max: 333}")));
 }
 
 

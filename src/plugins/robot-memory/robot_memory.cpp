@@ -46,11 +46,11 @@ using namespace fawkes;
  */
 
 /**
- * Robot Memory Constructor
+ * Robot Memory Constructor with objects of the thread
  * @param config Fawkes config
  * @param logger Fawkes logger
  * @param clock Fawkes clock
- * @param mongodb_client Fawkes mongo client from the mongo aspect
+ * @param mongo_connection_manager MongoDBConnCreator to create client connections to the shared and local db
  * @param blackboard Fawkes blackboard
  */
 RobotMemory::RobotMemory(fawkes::Configuration* config, fawkes::Logger* logger,
@@ -158,12 +158,53 @@ QResCursor RobotMemory::query(Query query, std::string collection)
 }
 
 /**
+ * Aggregation call on the robot memory.
+ * @param pipeline Series of commands defining the aggregation
+ * @param collection The database and collection to query as string (e.g. robmem.worldmodel)
+ * @return Result object
+ */
+BSONObj RobotMemory::aggregate(std::vector<BSONObj> pipeline, std::string collection)
+{
+  check_collection_name(collection);
+  mongo::DBClientBase* mongodb_client = get_mongodb_client(collection);
+  log_deb(std::string("Executing Aggregation on collection "+collection));
+
+  //TODO: check if computation on demand is necessary and execute Computables
+  // that might be complicated because you need to build a query to check against from the fields mentioned in the different parts of the pipeline
+  // A possible solution might be forcing the user to define the $match oject seperately and using it as query to check computables
+
+  //lock (mongo_client not thread safe)
+  MutexLocker lock(mutex_);
+
+  //actually execute aggregation as command (in more modern mongo-cxx versions there should be an easier way with a proper aggregate function)
+  BSONObj res;
+  //get db and collection name
+  size_t point_pos = collection.find(".");
+  if(point_pos == collection.npos)
+  {
+    logger_->log_error(name_, "Collection %s needs to start with 'dbname.'", collection.c_str());
+    return fromjson("{}");
+  }
+  std::string db = collection.substr(0, point_pos);
+  std::string col = collection.substr(point_pos+1);
+  try{
+    mongodb_client->runCommand(db, BSON("aggregate" << col  << "pipeline" << pipeline), res);
+  } catch (DBException &e) {
+    std::string error = std::string("Error for aggregation ")
+      + "\n Exception: " + e.toString();
+    log(error, "error");
+    return fromjson("{}");
+  }
+  return res;
+}
+
+/**
  * Inserts a document into the robot memory
  * @param obj The document as BSONObj
  * @param collection The database and collection to use as string (e.g. robmem.worldmodel)
  * @return 1: Success 0: Error
  */
-int RobotMemory::insert(BSONObj obj, std::string collection)
+int RobotMemory::insert(mongo::BSONObj obj, std::string collection)
 {
   check_collection_name(collection);
   mongo::DBClientBase* mongodb_client = get_mongodb_client(collection);
@@ -192,7 +233,7 @@ int RobotMemory::insert(BSONObj obj, std::string collection)
  * @param collection The database and collection to use as string (e.g. robmem.worldmodel)
  * @return 1: Success 0: Error
  */
-int RobotMemory::insert(std::vector<BSONObj> v_obj, std::string collection)
+int RobotMemory::insert(std::vector<mongo::BSONObj> v_obj, std::string collection)
 {
   check_collection_name(collection);
   mongo::DBClientBase* mongodb_client = get_mongodb_client(collection);
@@ -241,7 +282,7 @@ int RobotMemory::insert(std::string obj_str, std::string collection)
  * @param upsert Should the update document be inserted if the query returns no documents?
  * @return 1: Success 0: Error
  */
-int RobotMemory::update(Query query, BSONObj update, std::string collection, bool upsert)
+int RobotMemory::update(mongo::Query query, mongo::BSONObj update, std::string collection, bool upsert)
 {
   check_collection_name(collection);
   mongo::DBClientBase* mongodb_client = get_mongodb_client(collection);
@@ -269,7 +310,7 @@ int RobotMemory::update(Query query, BSONObj update, std::string collection, boo
  * @param upsert Should the update document be inserted if the query returns no documents?
  * @return 1: Success 0: Error
  */
-int RobotMemory::update(Query query, std::string update_str, std::string collection, bool upsert)
+int RobotMemory::update(mongo::Query query, std::string update_str, std::string collection, bool upsert)
 {
   return update(query, fromjson(update_str), collection, upsert);
 }
@@ -280,7 +321,7 @@ int RobotMemory::update(Query query, std::string update_str, std::string collect
  * @param collection The database and collection to use as string (e.g. robmem.worldmodel)
  * @return 1: Success 0: Error
  */
-int RobotMemory::remove(Query query, std::string collection)
+int RobotMemory::remove(mongo::Query query, std::string collection)
 {
   check_collection_name(collection);
   mongo::DBClientBase* mongodb_client = get_mongodb_client(collection);
@@ -298,6 +339,49 @@ int RobotMemory::remove(Query query, std::string collection)
   }
   //return success
   return 1;
+}
+
+/**
+ * Performs a MapReduce operation on the robot memory (https://docs.mongodb.com/manual/core/map-reduce/)
+ * @param query Which documents to use for the map step
+ * @param collection The database and collection to use as string (e.g. robmem.worldmodel)
+ * @param js_map_fun Map function in JavaScript as string
+ * @param js_reduce_fun Reduce function in JavaScript as string
+ * @return BSONObj containing the result
+ */
+mongo::BSONObj RobotMemory::mapreduce(mongo::Query query, std::string collection, std::string js_map_fun, std::string js_reduce_fun)
+{
+  check_collection_name(collection);
+  mongo::DBClientBase* mongodb_client = get_mongodb_client(collection);
+  MutexLocker lock(mutex_);
+  log_deb(std::string("Executing MapReduce "+query.toString()+" on collection "+collection+
+    " map: " + js_map_fun + " reduce: " + js_reduce_fun));
+  return mongodb_client->mapreduce(collection, js_map_fun, js_reduce_fun, query);
+}
+
+/**
+ * Performs an aggregation operation on the robot memory (https://docs.mongodb.com/v3.2/reference/method/db.collection.aggregate/)
+ * @param pipeline A sequence of data aggregation operations or stages. See the https://docs.mongodb.com/v3.2/reference/operator/aggregation-pipeline/ for details
+ * @param collection The database and collection to use as string (e.g. robmem.worldmodel)
+ * @return Cursor to get the documents from, NULL for invalid pipeline
+ */
+QResCursor RobotMemory::aggregate(mongo::BSONObj pipeline, std::string collection)
+{
+  check_collection_name(collection);
+  mongo::DBClientBase* mongodb_client = get_mongodb_client(collection);
+  MutexLocker lock(mutex_);
+  log_deb(std::string("Executing Aggregation pipeline: "+pipeline.toString() +" on collection "+collection));
+
+  QResCursor cursor;
+  try{
+    cursor = mongodb_client->aggregate(collection, pipeline);
+  } catch (DBException &e) {
+    std::string error = std::string("Error for query ")
+      + pipeline.toString() + "\n Exception: " + e.toString();
+    log(error, "error");
+    return NULL;
+  }
+  return cursor;
 }
 
 /**
@@ -461,14 +545,14 @@ RobotMemory::log_deb(std::string what, std::string level)
 }
 
 void
-RobotMemory::log_deb(Query query, std::string what, std::string level)
+RobotMemory::log_deb(mongo::Query query, std::string what, std::string level)
 {
   if(debug_)
     log(query, what, level);
 }
 
 void
-RobotMemory::log(Query query, std::string what, std::string level)
+RobotMemory::log(mongo::Query query, std::string what, std::string level)
 {
   std::string output = what
     + "\nFilter: " + query.getFilter().toString()
@@ -480,13 +564,13 @@ RobotMemory::log(Query query, std::string what, std::string level)
 }
 
 void
-RobotMemory::log_deb(BSONObj obj, std::string what, std::string level)
+RobotMemory::log_deb(mongo::BSONObj obj, std::string what, std::string level)
 {
   log(obj, what, level);
 }
 
 void
-RobotMemory::log(BSONObj obj, std::string what, std::string level)
+RobotMemory::log(mongo::BSONObj obj, std::string what, std::string level)
 {
   std::string output = what
     + "\nObject: " + obj.toString();
@@ -494,7 +578,7 @@ RobotMemory::log(BSONObj obj, std::string what, std::string level)
 }
 
 void
-RobotMemory::set_fields(BSONObj &obj, std::string what)
+RobotMemory::set_fields(mongo::BSONObj &obj, std::string what)
 {
   BSONObjBuilder b;
   b.appendElements(obj);
@@ -504,13 +588,13 @@ RobotMemory::set_fields(BSONObj &obj, std::string what)
 }
 
 void
-RobotMemory::set_fields(Query &q, std::string what)
+RobotMemory::set_fields(mongo::Query &q, std::string what)
 {
   BSONObjBuilder b;
   b.appendElements(q.getFilter());
   b.appendElements(fromjson(what));
 
-  //TODO keep other stuff in query
+  //the following is not yet kept in the query:
   // + "\nFilter: " + query.getFilter().toString()
   // + "\nModifiers: " + query.getModifiers().toString()
   // + "\nSort: " + query.getSort().toString()
@@ -522,12 +606,12 @@ RobotMemory::set_fields(Query &q, std::string what)
 }
 
 void
-RobotMemory::remove_field(Query &q, std::string what)
+RobotMemory::remove_field(mongo::Query &q, std::string what)
 {
   BSONObjBuilder b;
   b.appendElements(q.getFilter().removeField(what));
 
-  //TODO keep other stuff in query
+  //the following is not yet kept in the query:
   // + "\nFilter: " + query.getFilter().toString()
   // + "\nModifiers: " + query.getModifiers().toString()
   // + "\nSort: " + query.getSort().toString()
