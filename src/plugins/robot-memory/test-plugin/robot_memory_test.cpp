@@ -259,7 +259,7 @@ TEST_F(RobotMemoryTest, MapReduceQuery)
   ASSERT_TRUE(contains_pairs(res, fromjson("{ok: 1.0, results:[{_id:1.0, value:3.0}, {_id:2.0, value: 7.0}]}")));
 }
 
-TEST_F(RobotMemoryTest, AggregationQuery)
+TEST_F(RobotMemoryTest, AggregationQuery2)
 {
   //Test finds maximum with aggregation
   ASSERT_TRUE(robot_memory->insert("{'testname':'agg', v:1}", "robmem.test"));
