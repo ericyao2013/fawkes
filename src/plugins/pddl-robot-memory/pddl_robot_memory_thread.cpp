@@ -129,7 +129,13 @@ PddlRobotMemoryThread::loop()
 
     try {
       //fill dictionary to expand query template:
-      QResCursor cursor = robot_memory->query(fromjson(query_str), collection);
+      QResCursor cursor = NULL;
+      bool query_empty = false;
+      // FIXME loops should be configurable
+      for ( size_t loops = 0; !query_empty && loops < 20; ++loops) {
+        cursor = robot_memory->query(fromjson(query_str), collection);
+        query_empty = cursor->more();
+      }
       while(cursor->more())
       {
         BSONObj obj = cursor->next();
