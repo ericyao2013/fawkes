@@ -171,7 +171,7 @@ PddlPlannerThread::dbmp_planner()
 {
   logger->log_info(name(), "Starting PDDL Planning with DBMP...");
 
-  std::string command = "dbmp.py -p ff --output plan.pddl " + cfg_domain_path_ +
+  std::string command = "dbmp.py -p ensemble --output plan.pddl " + cfg_domain_path_ +
     " " + cfg_problem_path_;
   logger->log_info(name(), "Calling %s", command.c_str());
   std::string result = run_planner(command);
