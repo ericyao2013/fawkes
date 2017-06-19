@@ -133,11 +133,12 @@ PddlRobotMemoryThread::loop()
       QResCursor cursor = NULL;
       bool query_success = false;
       // FIXME loops should be configurable
-      for ( size_t loops = 0; !query_success && loops < 5; ++loops) {
+      for ( size_t loops = 0; !query_success && loops < 15; ++loops) {
         cursor = robot_memory->query(fromjson(query_str), collection);
         query_success = cursor->more();
         // Wait 500 millis if query failed
         if ( ! query_success ) {
+          logger->log_error("PddlRobotMemory", "Empty query for %s", query_str.c_str());
          usleep(500); 
         }
       }
