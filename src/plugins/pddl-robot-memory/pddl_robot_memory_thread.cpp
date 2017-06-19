@@ -138,7 +138,7 @@ PddlRobotMemoryThread::loop()
         // Wait 500 millis if query failed
         if ( ! query_success ) {
           logger->log_error("PddlRobotMemory", "Empty query for %s", query_str.c_str());
-         usleep(500); 
+         usleep(500000); 
         }
       }
       while(cursor->more())
