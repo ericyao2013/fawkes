@@ -132,8 +132,8 @@ PddlRobotMemoryThread::loop()
       //fill dictionary to expand query template:
       QResCursor cursor = NULL;
       bool query_success = false;
-      // FIXME loops should be configurable
-      for ( size_t loops = 0; !query_success && loops < 15; ++loops) {
+      // FIXME loops should be configurable, 5 minutes max now
+      for ( size_t loops = 0; !query_success && loops < 600; ++loops) {
         cursor = robot_memory->query(fromjson(query_str), collection);
         query_success = cursor->more();
         // Wait 500 millis if query failed
