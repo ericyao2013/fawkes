@@ -50,13 +50,15 @@ class LaserSimThread
   public fawkes::GazeboAspect
 {
  public:
-  LaserSimThread();
+  LaserSimThread(uint laser_number);
 
   virtual void init();
   virtual void loop();
   virtual void finalize();
 
  private:
+  ///name of the laser in the fawkes gazebo cfg yaml
+  uint laser_number_;
   ///Subscriber to receive laser data from gazebo
   gazebo::transport::SubscriberPtr laser_sub_;
   std::string laser_topic_;

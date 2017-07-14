@@ -43,22 +43,39 @@ using namespace gazebo;
  * @author Frederik Zwilling
  */
 
-/** Constructor. */
-LaserSimThread::LaserSimThread()
+/** Constructor.
+@param laser_number: number of the laser in the gazebo config file */
+LaserSimThread::LaserSimThread(uint laser_number)
   : Thread("LaserSimThread", Thread::OPMODE_WAITFORWAKEUP),
     BlockedTimingAspect(BlockedTimingAspect::WAKEUP_HOOK_SENSOR_PROCESS)
 {
+    laser_number_=laser_number;
 }
 
 void LaserSimThread::init()
 {
   logger->log_debug(name(), "Initializing Simulation of the Laser Sensor");
+  //logger->log_debug(name(), std::string(laser_number_).c_str());
 
-  //read config values
-  max_range_ = config->get_float("/gazsim/laser/max_range");
-  laser_topic_ = config->get_string("/gazsim/topics/laser");
-  interface_id_ = config->get_string("/gazsim/laser/interface-id");
-  frame_id_ = config->get_string("/gazsim/laser/frame-id");
+
+  switch (laser_number_) {
+  case 0:
+      //read config values
+      max_range_ = config->get_float("/gazsim/laser/max_range");
+      laser_topic_ = config->get_string("/gazsim/topics/laser");
+      interface_id_ = config->get_string("/gazsim/laser/interface-id");
+      frame_id_ = config->get_string("/gazsim/laser/frame-id");
+      break;
+  case 1:
+      //read config values
+      max_range_ = config->get_float("/gazsim/backlaser/max_range");
+      laser_topic_ = config->get_string("/gazsim/topics/backlaser");
+      interface_id_ = config->get_string("/gazsim/backlaser/interface-id");
+      frame_id_ = config->get_string("/gazsim/backlaser/frame-id");
+      break;
+  default:
+  logger->log_info(name(), "Unknownd Laser Number.\n");
+  }
 
   //open interface
   laser_if_ = blackboard->open_for_writing<Laser360Interface>(interface_id_.c_str());

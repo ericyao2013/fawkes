@@ -39,7 +39,10 @@ class GazsimLaserPlugin : public fawkes::Plugin
   GazsimLaserPlugin(Configuration *config)
     : Plugin(config)
   {
-    thread_list.push_back(new LaserSimThread());
+    // front laser
+    thread_list.push_back(new LaserSimThread(0));
+    //back laser
+    thread_list.push_back(new LaserSimThread(1));
   }
 };
 
