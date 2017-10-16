@@ -43,6 +43,8 @@ class PDDLParserException : public fawkes::Exception
  public:
   PDDLParserException(const char *msg)
     : fawkes::Exception(msg) {}
+  PDDLParserException(const std::string &msg)
+    : fawkes::Exception(msg.c_str()) {}
 };
 
 }
