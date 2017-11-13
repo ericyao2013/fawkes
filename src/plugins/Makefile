@@ -31,7 +31,7 @@ SUBDIRS	= bbsync bblogger webview ttmainloop rrd rrdweb \
 	  openni refboxcomm ros player xmlrpc gossip \
 	  robot_state_publisher gazebo dynamixel navgraph-interactive \
 	  syncpoint-test \
-	  pddl-planner \
+	  pddl-planner clips-executive
 
 include $(BUILDSYSDIR)/rules.mk
 
