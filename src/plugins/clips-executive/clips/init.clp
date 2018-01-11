@@ -191,7 +191,8 @@
 	=>
 	; Common spec config prefix
 	(bind ?pf (str-cat "/clips-executive/specs/" ?spec "/"))
-	(foreach ?component (create$ "domain" "worldmodel" "state-estimation"
+	(foreach ?component (create$ "init" "domain" "worldmodel" "state-estimation"
+                               "communication" "coordination"
                                "goal-reasoner" "goal-expander"
                                "macro-expansion" "action-selection"
                                "action-execution" "execution-monitoring")
