@@ -255,8 +255,11 @@
     (param-names $?action-param-names)
     (id ?action-id)
     (param-values $?action-values))
-  (domain-precondition (name ?parent)
-    (grounded-with ?action-id&~0) (grounded TRUE))
+  (domain-precondition
+    (name ?parent)
+    (part-of ?op)
+    (grounded-with ?action-id&~0)
+    (grounded TRUE))
   ?precond <- (domain-atomic-precondition
                 (part-of ?parent)
                 (name ?precond-name)
@@ -279,7 +282,7 @@
       (if (not ?action-index) then
         ; ?p is not in the list of the action parameters
         (assert (domain-error (error-type unknown-parameter) (error-msg
-          (str-cat "Precondition " ?precond-name " has unknown parameter " ?p)))
+          (str-cat "Precondition " ?precond-name " has unknown parameter " ?p " in Operator" ?op)))
         )
       else
         (bind ?values
