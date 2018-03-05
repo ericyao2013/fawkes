@@ -45,14 +45,30 @@
 	)
 )
 
-(deffunction domain-fact-key (?param-names ?param-values)
+(deffunction domain-fact-key (?name ?param-names ?param-values)
 	(if (<> (length$ ?param-names) (length$ ?param-values)) then
 		(printout error "Cannot generate domain fact key with non-equal length names and values" crlf)
 		(return FALSE)
 	)
-	(bind ?rv (create$))
-	(foreach ?n ?param-names (bind ?rv (append$ ?rv ?n (nth$ ?n-index ?param-values))))
+	(bind ?rv (create$ ?name))
+	(if (> (length$ ?param-names) 0) then
+		(bind ?rv (append$ ?rv args?))
+		(foreach ?n ?param-names (bind ?rv (append$ ?rv ?n (nth$ ?n-index ?param-values))))
+	)
 	(return ?rv)
+)
+
+(deffunction domain-fact-args (?param-names ?param-values)
+	(if (<> (length$ ?param-names) (length$ ?param-values)) then
+		(printout error "Cannot generate domain fact args with non-equal length names and values" crlf)
+		(return FALSE)
+	)
+	(bind ?args (create$))
+	(if (> (length$ ?param-names) 0) then
+		(bind ?args (append$ ?args args?))
+		(foreach ?n ?param-names (bind ?args (append$ ?args ?n (nth$ ?n-index ?param-values))))
+	)
+	(return ?args)
 )
 
 (deftemplate domain-retracted-fact
@@ -155,18 +171,18 @@
 
 (defrule domain-translate-obj-slot-type-to-ordered-fact
   "Translate the slot type of a domain-object into the ordered fact
-   obj-is-of-type."
+   domain-obj-is-of-type."
   (domain-object (name ?obj) (type ?type))
 =>
-  (assert (obj-is-of-type ?obj ?type))
+  (assert (domain-obj-is-of-type ?obj ?type))
 )
 
 (defrule domain-get-transitive-types
   "An object of type t also has each super-type of t as its type."
-  (obj-is-of-type ?obj ?type)
+  (domain-obj-is-of-type ?obj ?type)
   (domain-object-type (name ?type) (super-type ?super-type))
 =>
-  (assert (obj-is-of-type ?obj ?super-type))
+  (assert (domain-obj-is-of-type ?obj ?super-type))
 )
 
 (defrule domain-amend-action-params
@@ -187,7 +203,8 @@
   "Ground a non-atomic precondition. Grounding here merely means that we
    duplicate the precondition and tie it to one specific action-id."
   (not (domain-wm-update))
-  (plan-action (action-name ?op) (id ?action-id))
+  (plan-action (action-name ?op) (id ?action-id) 
+    (status FORMULATED|PENDING|WAITING))
   ?precond <- (domain-precondition
                 (name ?precond-name)
                 (part-of ?op)
@@ -235,12 +252,16 @@
   "Ground an atomic precondition of an operator."
   (not (domain-wm-update))
   (plan-action
+    (status FORMULATED|PENDING|WAITING)
     (action-name ?op)
     (param-names $?action-param-names)
     (id ?action-id)
     (param-values $?action-values))
-  (domain-precondition (name ?parent)
-    (grounded-with ?action-id&~0) (grounded TRUE))
+  (domain-precondition
+    (name ?parent)
+    (part-of ?op)
+    (grounded-with ?action-id&~0)
+    (grounded TRUE))
   ?precond <- (domain-atomic-precondition
                 (part-of ?parent)
                 (name ?precond-name)
@@ -263,7 +284,7 @@
       (if (not ?action-index) then
         ; ?p is not in the list of the action parameters
         (assert (domain-error (error-type unknown-parameter) (error-msg
-          (str-cat "Precondition " ?precond-name " has unknown parameter " ?p)))
+          (str-cat "Precondition " ?precond-name " has unknown parameter " ?p " in Operator" ?op)))
         )
       else
         (bind ?values
@@ -404,15 +425,15 @@
   (return ?values)
 )
 
-; Atomically assert all effects of an action after it has been executed.
-(defrule domain-apply-effects
+(defrule domain-effects-check-for-sensed
   "Apply effects of an action after it succeeded."
   ?pa <- (plan-action	(id ?id) (action-name ?op) (status EXECUTION-SUCCEEDED)
 											(param-names $?action-param-names) (param-values $?action-param-values))
-	(domain-operator (name ?action-name) (wait-sensed ?wait-sensed))
+	(domain-operator (name ?action-name) (wait-sensed TRUE))
 	=>
+	(bind ?next-state SENSED-EFFECTS-HOLD)
 	(do-for-all-facts ((?e domain-effect) (?p domain-predicate))
-		(and (eq ?e:part-of ?op) (eq ?e:predicate ?p:name))
+		(and ?p:sensed (eq ?e:part-of ?op) (eq ?e:predicate ?p:name))
 
 		; apply if this effect is unconditional or the condition is satisfied
 		(if (or (not (any-factp ((?cep domain-precondition)) (eq ?cep:part-of ?e:name)))
@@ -424,19 +445,48 @@
 						(domain-ground-effect ?e:param-names ?e:param-constants
 																	?action-param-names ?action-param-values))
 
-			(if ?p:sensed
+			(assert (domain-pending-sensed-fact (name ?p:name) (action-id ?id)
+																					(param-values ?values) (type ?e:type)))
+			(bind ?next-state SENSED-EFFECTS-WAIT)
+		)
+	)
+	(modify ?pa (status ?next-state))
+)
+
+(defrule domain-effects-ignore-sensed
+  "Apply effects of an action after it succeeded."
+  ?pa <- (plan-action	(id ?id) (action-name ?op) (status EXECUTION-SUCCEEDED)
+											(param-names $?action-param-names) (param-values $?action-param-values))
+	(domain-operator (name ?action-name) (wait-sensed FALSE))
+	=>
+	(modify ?pa (status SENSED-EFFECTS-HOLD))
+)
+
+; Atomically assert all effects of an action after it has been executed.
+(defrule domain-effects-apply
+  "Apply effects of an action after it succeeded."
+  ?pa <- (plan-action	(id ?id) (action-name ?op) (status SENSED-EFFECTS-HOLD)
+											(param-names $?action-param-names) (param-values $?action-param-values))
+	(domain-operator (name ?action-name))
+	=>
+	(do-for-all-facts ((?e domain-effect) (?p domain-predicate))
+		(and (not ?p:sensed) (eq ?e:part-of ?op) (eq ?e:predicate ?p:name))
+
+		; apply if this effect is unconditional or the condition is satisfied
+		(if (or (not (any-factp ((?cep domain-precondition)) (eq ?cep:part-of ?e:name)))
+						(any-factp ((?cep domain-precondition))
+											 (and (eq ?cep:part-of ?e:name) ?cep:is-satisfied
+														?cep:grounded (eq ?cep:grounded-with ?id))))
+		 then
+			(bind ?values
+						(domain-ground-effect ?e:param-names ?e:param-constants
+																	?action-param-names ?action-param-values))
+
+			(if (eq ?e:type POSITIVE)
 			 then
-				(if ?wait-sensed then
-					(assert (domain-pending-sensed-fact (name ?p:name) (action-id ?id)
-																							(param-values ?values) (type ?e:type)))
-				)
+				(assert (domain-fact (name ?p:name) (param-values ?values)))
 			 else
-				(if (eq ?e:type POSITIVE)
-				 then
-					(assert (domain-fact (name ?p:name) (param-values ?values)))
-				 else
-					(assert (domain-retracted-fact (name ?p:name) (param-values ?values)))
-				)
+				(assert (domain-retracted-fact (name ?p:name) (param-values ?values)))
 			)
 		)
 	)
@@ -459,8 +509,8 @@
   (retract ?r)
 )
 
-(defrule domain-check-positive-pending-sensed-fact
-  "Remove any pending sensed positive facts that have been sensed."
+(defrule domain-effect-sensed-positive-holds
+  "Remove a pending sensed positive fact that has been sensed."
   ?ef <- (domain-pending-sensed-fact (type POSITIVE)
           (name ?predicate) (param-values $?values))
   ?df <- (domain-fact (name ?predicate) (param-values $?values))
@@ -468,8 +518,8 @@
   (retract ?ef)
 )
 
-(defrule domain-check-negative-pending-sensed-fact
-  "Remove any pending sensed negative facts that have been sensed."
+(defrule domain-effect-sensed-negative-holds
+  "Remove a pending sensed negative fact that has been sensed."
   ?ef <- (domain-pending-sensed-fact (type NEGATIVE)
           (name ?predicate) (param-values $?values))
   (not (domain-fact (name ?predicate) (param-values $?values)))
@@ -477,10 +527,17 @@
   (retract ?ef)
 )
 
-(defrule domain-action-is-final
+(defrule domain-effect-wait-sensed-done
+  "After the effects of an action have been applied, change it to SENSED-EFFECTS-HOLD."
+  ?a <- (plan-action (id ?action-id) (status SENSED-EFFECTS-WAIT))
+  (not (domain-pending-sensed-fact (action-id ?action-id)))
+  =>
+  (modify ?a (status SENSED-EFFECTS-HOLD))
+)
+
+(defrule domain-action-final
   "After the effects of an action have been applied, change it to FINAL."
   ?a <- (plan-action (id ?action-id) (status EFFECTS-APPLIED))
-  (not (domain-pending-sensed-fact (action-id ?action-id)))
   =>
   (modify ?a (status FINAL))
   (assert (domain-wm-update))
@@ -491,7 +548,7 @@
 ; might happen if all effects only refer to sensed predicates and
 ; these have the expected values (possibly after a short stabilization
 ; period).
-(defrule domain-action-has-failed
+(defrule domain-action-failed
   "An action has failed."
   ?a <- (plan-action (id ?action-id) (status EXECUTION-FAILED))
   =>

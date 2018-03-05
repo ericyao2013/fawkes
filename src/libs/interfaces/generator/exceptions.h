@@ -169,4 +169,20 @@ class InterfaceGeneratorAmbiguousNameException : public fawkes::Exception {
 };
 
 
+/** Thrown if something is a reserved identifier. */
+class InterfaceGeneratorReservedIdentifierException : public fawkes::Exception {
+public:
+  /**
+   * @brief InterfaceGeneratorReservedIdentifierException
+   * @param item type of offending item
+   * @param name Offending name
+   */
+  InterfaceGeneratorReservedIdentifierException(const char *item, const char *name)
+    : fawkes::Exception()
+  {
+    append("%s name '%s' is a reserved identifier", item, name);
+  }
+};
+
+
 #endif
