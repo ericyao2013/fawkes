@@ -82,11 +82,12 @@
 	(slot id (type SYMBOL))
 	(slot class (type SYMBOL))
   (slot type (type SYMBOL) (allowed-values ACHIEVE MAINTAIN) (default ACHIEVE))
+  (slot parent (type SYMBOL))
 	(slot mode (type SYMBOL) (allowed-values FORMULATED SELECTED EXPANDED
 																					 COMMITTED DISPATCHED FINISHED EVALUATED
 																					 REJECTED))
 	(slot outcome (type SYMBOL) (allowed-values UNKNOWN COMPLETED FAILED))
-  (slot parent (type SYMBOL))
+	(slot message (type STRING))
 	; higher number entails higher priority
 	; A goal might be preferred for selection, expansion, or execution depending
 	; on its priority. Some spec chains may support this, others not.
@@ -99,7 +100,6 @@
 	; - (params text "Remember the Cant")
 	; - (params location { x 0.0 y 1.0 })
 	(multislot params)
-	(slot message (type STRING))
 )
 
 (deftemplate plan
