@@ -104,20 +104,25 @@ class WebReply
   virtual ~WebReply();
 
   Code              code() const;
-  void              add_header(std::string header, std::string content);
-  void              add_header(std::string header_string);
+  void              set_code(Code code);
+  void              add_header(const std::string& header, const std::string& content);
+  void              add_header(const std::string& header_string);
   const HeaderMap & headers() const;
   
-  static void       set_caching(bool caching);
+  void              set_caching(bool caching);
+  static void       set_caching_default(bool caching);
 
   void              set_request(WebRequest *request);
   WebRequest *      get_request() const;
 
+  void              pack();
+
  private:
-  Code              __code;
-  HeaderMap         __headers;
-  static bool       __caching;
-  WebRequest       *__request;
+  Code              code_;
+  HeaderMap         headers_;
+  bool              caching_;
+  static bool       caching_default_;
+  WebRequest       *request_;
 };
 
 class DynamicWebReply : public WebReply
@@ -146,6 +151,8 @@ class StaticWebReply : public WebReply
   /** Body of the reply. */
   std::string _body;
 };
+
+extern WebReply * no_caching(WebReply *reply);
 
 } // end namespace fawkes
 
