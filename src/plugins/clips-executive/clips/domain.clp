@@ -326,6 +326,8 @@
 )
 
 (defrule domain-check-if-atomic-precondition-is-satisfied
+  ;possible-bug:: No other rule exists to make is-satisfiable FALSE 
+  ;               if the domain-fact does no longer exist
   ?precond <- (domain-atomic-precondition
                 (goal-id ?g) (plan-id ?p)
                 (is-satisfied FALSE)
@@ -341,6 +343,8 @@
   "A negative precondition is satisfied iff its (only) child is not satisfied.
    Note that we need a second rule that retracts the fact if the child is
    asserted."
+   ;possible-bug:: This could fire on the initial false value of is-satisifed.
+   ;               Even if, it was satisfied but yet to be set
   ?precond <- (domain-precondition
                 (type negation)
                 (grounded TRUE)
@@ -363,6 +367,7 @@
 =>
   (modify ?precond (is-satisfied TRUE))
 )
+
 
 (defrule domain-retract-negative-precondition-if-child-is-satisfied
   "If a negative precondition's child is satisfied, the precondition is not
@@ -392,6 +397,9 @@
 
 (defrule domain-check-if-conjunctive-precondition-is-satisfied
   "All the precondition's children must be satisfied."
+  ;BUG:: if the atomic-preconditions/nested-precondition where never grounded,
+  ; this will still fire making the conjunction satisfiable and hence the action executable
+  ; and not EVEN check if the atomic preconditions where satisfied at all
   ?precond <- (domain-precondition
                 (name ?pn)
                 (type conjunction)
@@ -587,6 +595,9 @@
   "If the precondition of an action is satisfied, the action is executable."
   ?action <- (plan-action (id ?action-id) (goal-id ?g) (plan-id ?p)
                           (executable FALSE))
+  ;possible-bug::: (part-of ?action-id) is missing which could cause any random
+  ;                 satisfied precondition that was grounded by that actions-id
+  ;                 to render the action executable
   (domain-precondition (plan-id ?p) (goal-id ?g) (grounded-with ?action-id)
                        (is-satisfied TRUE))
 =>
