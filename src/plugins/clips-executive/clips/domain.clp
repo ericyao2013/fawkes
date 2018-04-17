@@ -347,6 +347,18 @@
   (modify ?precond (is-satisfied TRUE))
 )
 
+(defrule domain-check-if-atomic-precondition-is-not-satisfied
+  ?precond <- (domain-atomic-precondition
+                (goal-id ?g) (plan-id ?p)
+                (is-satisfied TRUE)
+                (predicate ?pred)
+                (param-values $?params)
+                (grounded TRUE))
+  (not (domain-fact (name ?pred) (param-values $?params)))
+=>
+  (modify ?precond (is-satisfied FALSE))
+)
+
 (defrule domain-check-if-negative-precondition-is-satisfied
   "A negative precondition is satisfied iff its (only) child is not satisfied.
    Note that we need a second rule that retracts the fact if the child is
@@ -375,6 +387,7 @@
 =>
   (modify ?precond (is-satisfied TRUE))
 )
+
 
 (defrule domain-retract-negative-precondition-if-child-is-satisfied
   "If a negative precondition's child is satisfied, the precondition is not
@@ -416,14 +429,23 @@
                 (grounded-with ?action-id)
                 (grounded TRUE)
                 (is-satisfied FALSE))
-  (not (domain-atomic-precondition
+  ;For all atomic/- preconditions, there is a grounded, is-satisfied fact
+  (not
+   (and 
+      (domain-atomic-precondition (name ?apn) (part-of ?pn) (grounded FALSE))
+      (not (domain-atomic-precondition (name ?apn) (part-of ?pn) (grounded TRUE)
+              (goal-id ?g) (plan-id ?p)
+              (grounded-with ?action-id)
+              (is-satisfied TRUE)))
+  ))
+  (not
+    (and
+      (domain-precondition (name ?ppn) (part-of ?pn) (grounded FALSE))
+      (not (domain-precondition (name ?ppn) (part-of ?pn) (grounded TRUE)
         (goal-id ?g) (plan-id ?p)
-        (part-of ?pn) (grounded TRUE)
-        (grounded-with ?action-id) (is-satisfied FALSE)))
-  (not (domain-precondition
-        (goal-id ?g) (plan-id ?p)
-        (part-of ?pn) (grounded TRUE)
-        (grounded-with ?action-id) (is-satisfied FALSE)))
+        (grounded-with ?action-id) 
+        (is-satisfied TRUE)))
+  ))
 =>
   (modify ?precond (is-satisfied TRUE))
 )
@@ -610,9 +632,9 @@
   (goal (id ?g))
   (plan (id ?p) (goal-id ?g))
   ?action <- (plan-action (id ?action-id) (goal-id ?g) (plan-id ?p)
-                          (executable FALSE))
+                          (action-name ?op) (executable FALSE))
   (domain-precondition (plan-id ?p) (goal-id ?g) (grounded-with ?action-id)
-                       (is-satisfied TRUE))
+                       (part-of ?op)  (is-satisfied TRUE))
 =>
   (modify ?action (executable TRUE))
 )
