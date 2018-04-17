@@ -594,12 +594,9 @@
 (defrule domain-check-if-action-is-executable
   "If the precondition of an action is satisfied, the action is executable."
   ?action <- (plan-action (id ?action-id) (goal-id ?g) (plan-id ?p)
-                          (executable FALSE))
-  ;possible-bug::: (part-of ?action-id) is missing which could cause any random
-  ;                 satisfied precondition that was grounded by that actions-id
-  ;                 to render the action executable
+                          (action-name ?op) (executable FALSE))
   (domain-precondition (plan-id ?p) (goal-id ?g) (grounded-with ?action-id)
-                       (is-satisfied TRUE))
+                       (part-of ?op)  (is-satisfied TRUE))
 =>
   (modify ?action (executable TRUE))
 )
