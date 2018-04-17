@@ -407,9 +407,6 @@
 
 (defrule domain-check-if-conjunctive-precondition-is-satisfied
   "All the precondition's children must be satisfied."
-  ;BUG:: if the atomic-preconditions/nested-precondition where never grounded,
-  ; this will still fire making the conjunction satisfiable and hence the action executable
-  ; and not EVEN check if the atomic preconditions where satisfied at all
   ?precond <- (domain-precondition
                 (name ?pn)
                 (type conjunction)
@@ -418,14 +415,23 @@
                 (grounded-with ?action-id)
                 (grounded TRUE)
                 (is-satisfied FALSE))
-  (not (domain-atomic-precondition
+  ;For all atomic/- preconditions, there is a grounded, is-satisfied fact
+  (not
+   (and 
+      (domain-atomic-precondition (name ?apn) (part-of ?pn) (grounded FALSE))
+      (not (domain-atomic-precondition (name ?apn) (part-of ?pn) (grounded TRUE)
+              (goal-id ?g) (plan-id ?p)
+              (grounded-with ?action-id)
+              (is-satisfied TRUE)))
+  ))
+  (not
+    (and
+      (domain-precondition (name ?ppn) (part-of ?pn) (grounded FALSE))
+      (not (domain-precondition (name ?ppn) (part-of ?pn) (grounded TRUE)
         (goal-id ?g) (plan-id ?p)
-        (part-of ?pn) (grounded TRUE)
-        (grounded-with ?action-id) (is-satisfied FALSE)))
-  (not (domain-precondition
-        (goal-id ?g) (plan-id ?p)
-        (part-of ?pn) (grounded TRUE)
-        (grounded-with ?action-id) (is-satisfied FALSE)))
+        (grounded-with ?action-id) 
+        (is-satisfied TRUE)))
+  ))
 =>
   (modify ?precond (is-satisfied TRUE))
 )
