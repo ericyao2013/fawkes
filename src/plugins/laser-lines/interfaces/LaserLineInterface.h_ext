@@ -72,6 +72,12 @@ class LaserLineInterface : public Interface
       the line.
      */
     float length; /**< Length of the line. */
+    char end_point_1_frame_id[32]; /**< 
+      Coordinate frame ID for first endpoint
+     */
+    char end_point_2_frame_id[32]; /**< 
+      Coordinate frame ID for second endpoint
+     */
   } LaserLineInterface_data_t;
 
   LaserLineInterface_data_t *data;
@@ -117,6 +123,12 @@ class LaserLineInterface : public Interface
   float length() const;
   void set_length(const float new_length);
   size_t maxlenof_length() const;
+  char * end_point_1_frame_id() const;
+  void set_end_point_1_frame_id(const char * new_end_point_1_frame_id);
+  size_t maxlenof_end_point_1_frame_id() const;
+  char * end_point_2_frame_id() const;
+  void set_end_point_2_frame_id(const char * new_end_point_2_frame_id);
+  size_t maxlenof_end_point_2_frame_id() const;
   virtual Message * create_message(const char *type) const;
 
   virtual void copy_values(const Interface *other);
