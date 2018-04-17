@@ -452,8 +452,6 @@
 )
 
 (defrule domain-check-if-atomic-precondition-is-satisfied
-  ;possible-bug:: No other rule exists to make is-satisfiable FALSE 
-  ;               if the domain-fact does no longer exist
   ?precond <- (domain-atomic-precondition
                 (goal-id ?g) (plan-id ?p)
                 (is-satisfied FALSE)
@@ -465,6 +463,7 @@
 =>
   (modify ?precond (is-satisfied TRUE))
 )
+
 
 (defrule domain-check-if-atomic-equality-precondition-is-satisfied
   ?precond <- (domain-atomic-precondition
@@ -479,6 +478,19 @@
 =>
   (modify ?precond (is-satisfied (eq (nth$ 1 ?params) (nth$ 2 ?params))))
 )
+
+(defrule domain-check-if-atomic-precondition-is-not-satisfied
+  ?precond <- (domain-atomic-precondition
+                (goal-id ?g) (plan-id ?p)
+                (is-satisfied TRUE)
+                (predicate ?pred)
+                (param-values $?params)
+                (grounded TRUE))
+  (not (domain-fact (name ?pred) (param-values $?params)))
+=>
+  (modify ?precond (is-satisfied FALSE))
+)
+
 
 (defrule domain-check-if-negative-precondition-is-satisfied
   "A negative precondition is satisfied iff its (only) child is not satisfied.
