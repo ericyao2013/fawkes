@@ -326,8 +326,6 @@
 )
 
 (defrule domain-check-if-atomic-precondition-is-satisfied
-  ;possible-bug:: No other rule exists to make is-satisfiable FALSE 
-  ;               if the domain-fact does no longer exist
   ?precond <- (domain-atomic-precondition
                 (goal-id ?g) (plan-id ?p)
                 (is-satisfied FALSE)
@@ -337,6 +335,18 @@
   (domain-fact (name ?pred) (param-values $?params))
 =>
   (modify ?precond (is-satisfied TRUE))
+)
+
+(defrule domain-check-if-atomic-precondition-is-not-satisfied
+  ?precond <- (domain-atomic-precondition
+                (goal-id ?g) (plan-id ?p)
+                (is-satisfied TRUE)
+                (predicate ?pred)
+                (param-values $?params)
+                (grounded TRUE))
+  (not (domain-fact (name ?pred) (param-values $?params)))
+=>
+  (modify ?precond (is-satisfied FALSE))
 )
 
 (defrule domain-check-if-negative-precondition-is-satisfied
