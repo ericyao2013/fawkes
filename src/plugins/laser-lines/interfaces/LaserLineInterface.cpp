@@ -56,7 +56,9 @@ LaserLineInterface::LaserLineInterface() : Interface()
   add_fieldinfo(IFT_FLOAT, "end_point_1", 3, &data->end_point_1);
   add_fieldinfo(IFT_FLOAT, "end_point_2", 3, &data->end_point_2);
   add_fieldinfo(IFT_FLOAT, "length", 1, &data->length);
-  unsigned char tmp_hash[] = {0x80, 0xa, 0x8e, 0xab, 0x65, 0xe7, 0x47, 0x3f, 0xc3, 0x8a, 0x44, 0x7b, 0xda, 0xbd, 0xfb, 0x5f};
+  add_fieldinfo(IFT_STRING, "end_point_1_frame_id", 32, data->end_point_1_frame_id);
+  add_fieldinfo(IFT_STRING, "end_point_2_frame_id", 32, data->end_point_2_frame_id);
+  unsigned char tmp_hash[] = {0x21, 0x36, 0x85, 0x7a, 0x9b, 0xc2, 0xf3, 0x3f, 0xc9, 0x35, 0xd3, 0x81, 0xd, 0xbe, 0x1e, 0x28};
   set_hash(tmp_hash);
 }
 
@@ -97,8 +99,7 @@ LaserLineInterface::maxlenof_frame_id() const
 void
 LaserLineInterface::set_frame_id(const char * new_frame_id)
 {
-  strncpy(data->frame_id, new_frame_id, sizeof(data->frame_id)-1);
-  data->frame_id[sizeof(data->frame_id)-1] = 0;
+  strncpy(data->frame_id, new_frame_id, sizeof(data->frame_id));
   data_changed = true;
 }
 
@@ -490,6 +491,76 @@ void
 LaserLineInterface::set_length(const float new_length)
 {
   data->length = new_length;
+  data_changed = true;
+}
+
+/** Get end_point_1_frame_id value.
+ * 
+      Coordinate frame ID for first endpoint
+    
+ * @return end_point_1_frame_id value
+ */
+char *
+LaserLineInterface::end_point_1_frame_id() const
+{
+  return data->end_point_1_frame_id;
+}
+
+/** Get maximum length of end_point_1_frame_id value.
+ * @return length of end_point_1_frame_id value, can be length of the array or number of 
+ * maximum number of characters for a string
+ */
+size_t
+LaserLineInterface::maxlenof_end_point_1_frame_id() const
+{
+  return 32;
+}
+
+/** Set end_point_1_frame_id value.
+ * 
+      Coordinate frame ID for first endpoint
+    
+ * @param new_end_point_1_frame_id new end_point_1_frame_id value
+ */
+void
+LaserLineInterface::set_end_point_1_frame_id(const char * new_end_point_1_frame_id)
+{
+  strncpy(data->end_point_1_frame_id, new_end_point_1_frame_id, sizeof(data->end_point_1_frame_id));
+  data_changed = true;
+}
+
+/** Get end_point_2_frame_id value.
+ * 
+      Coordinate frame ID for second endpoint
+    
+ * @return end_point_2_frame_id value
+ */
+char *
+LaserLineInterface::end_point_2_frame_id() const
+{
+  return data->end_point_2_frame_id;
+}
+
+/** Get maximum length of end_point_2_frame_id value.
+ * @return length of end_point_2_frame_id value, can be length of the array or number of 
+ * maximum number of characters for a string
+ */
+size_t
+LaserLineInterface::maxlenof_end_point_2_frame_id() const
+{
+  return 32;
+}
+
+/** Set end_point_2_frame_id value.
+ * 
+      Coordinate frame ID for second endpoint
+    
+ * @param new_end_point_2_frame_id new end_point_2_frame_id value
+ */
+void
+LaserLineInterface::set_end_point_2_frame_id(const char * new_end_point_2_frame_id)
+{
+  strncpy(data->end_point_2_frame_id, new_end_point_2_frame_id, sizeof(data->end_point_2_frame_id));
   data_changed = true;
 }
 

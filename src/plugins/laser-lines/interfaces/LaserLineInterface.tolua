@@ -30,6 +30,12 @@ class LaserLineInterface : public Interface
   float length();
   void set_length(const float new_length);
   int maxlenof_length() const;
+  char * end_point_1_frame_id();
+  void set_end_point_1_frame_id(const char * new_end_point_1_frame_id);
+  int maxlenof_end_point_1_frame_id() const;
+  char * end_point_2_frame_id();
+  void set_end_point_2_frame_id(const char * new_end_point_2_frame_id);
+  int maxlenof_end_point_2_frame_id() const;
   bool                    oftype(const char *interface_type) const;
   const void *            datachunk() const;
   unsigned int            datasize() const;
