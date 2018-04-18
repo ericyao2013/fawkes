@@ -50,3 +50,32 @@
 .ff-nav-item {
   margin-left: 3 * $baseline-grid;
 }
+
+.rw-button {
+		position: absolute;
+		bottom: 4 * $baseline-grid;
+		font-size: $subhead-font-size-base;
+		margin-top: auto;
+		padding-left: $baseline-grid;
+		padding-right: $baseline-grid;
+}
+
+.rw-button-normal {
+		color: #ccc;
+}
+
+.rw-fab-button {
+		position: fixed;
+		bottom: 0;
+		left: 4 * $baseline-grid;
+		opacity: 0;
+		z-index: 999;
+		animation: fadein 400ms;
+		animation-delay: 100ms;
+		animation-fill-mode: forwards;
+}
+
+@keyframes fadein {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}

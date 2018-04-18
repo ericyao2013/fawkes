@@ -7,6 +7,7 @@ import { BrowserModule } from '@angular/platform-browser';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { ServiceWorkerModule } from '@angular/service-worker';
 import { HttpClientModule } from '@angular/common/http';
+import { WebStorageModule } from 'ngx-store';
 
 import { environment } from '../environments/environment';
 
@@ -18,6 +19,7 @@ import { ConfigurationService } from '../services/config/config.service';
 import { ConfigurationApiService } from '../services/config/api.service';
 import { AssetsService } from '../services/global/assets';
 import { SwUpdateNotifierService } from '../services/update-notifier/update-notifier.service';
+import { LockoutService } from '../services/lockout/lockout.service';
 
 import { ClipsExecutiveModule } from '../parts/clips-executive/module';
 import { SkillerModule } from '../parts/skiller/module';
@@ -39,6 +41,7 @@ import { HttpClientInMemoryWebApiModule } from 'angular-in-memory-web-api';
 	  
 	  HttpClientModule,
 	  ServiceWorkerModule.register('/ngsw-worker.js', { enabled: environment.production }),
+	  WebStorageModule,
 
 	  ChromeModule,
 	  ClipsExecutiveModule,
@@ -52,7 +55,7 @@ import { HttpClientInMemoryWebApiModule } from 'angular-in-memory-web-api';
 	  // Keep the AppRoutingModule last
 	  AppRoutingModule,
 	],
-  providers: [BackendConfigurationService,
+  providers: [LockoutService, BackendConfigurationService,
               ConfigurationService, ConfigurationApiService,
               AssetsService, SwUpdateNotifierService],
 	bootstrap: [AppComponent]

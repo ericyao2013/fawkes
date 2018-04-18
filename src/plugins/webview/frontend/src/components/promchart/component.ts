@@ -54,6 +54,7 @@ export class PrometheusChartComponent implements AfterViewInit, OnInit, OnDestro
   @Input() y_min?: number = null;
   @Input() y_max?: number = null;
   @Input() y_tick_count?: number = 4;
+  @Input() y_axis_center?: number = null;
   @Input() refresh_interval_sec?: number = 60;
 
   @ViewChild('chart') chart_elem;
@@ -146,9 +147,6 @@ export class PrometheusChartComponent implements AfterViewInit, OnInit, OnDestro
               timeline.push(i * 1000);
             }
 
-            // From here on, the index in data does not reflect the
-            // index in obj.data.result since we may have deleted some
-
             let columns = [['__x', ...timeline]];
             let groups = this.group_all ? [[]] : this.groups;
             let types = {};
@@ -174,6 +172,12 @@ export class PrometheusChartComponent implements AfterViewInit, OnInit, OnDestro
               }
             }
 
+            // If we only have the x axis, but no actual data, abort
+            if (columns.length == 1) {
+              this.zero_message = "No data available";
+              return;
+            }
+
             if (! this.y_axis.tick) {
               this.y_axis.tick = {};
             }
@@ -194,6 +198,9 @@ export class PrometheusChartComponent implements AfterViewInit, OnInit, OnDestro
             }
             if (this.y_tick_count) {
               this.y_axis.tick.count = this.y_tick_count + 1;
+            }
+            if (this.y_axis_center != null) {
+              this.y_axis.center = this.y_axis_center;
             }
 
             if (! this.legend.item) {
@@ -334,7 +341,7 @@ export class PrometheusChartComponent implements AfterViewInit, OnInit, OnDestro
     }
     return function(value: number): string {
       let idx = 0;
-      while (value > 1024 && idx < units.length - 1) {
+      while (Math.abs(value) > 1024 && idx < units.length - 1) {
         value /= 1024;
         idx += 1;
       }

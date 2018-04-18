@@ -2,11 +2,13 @@
 // Copyright  2018  Tim Niemueller <niemueller@kbsg.rwth-aachen.de>
 // License: Apache 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
 
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ViewChild } from '@angular/core';
 import { Observable } from 'rxjs/Observable';
 import 'rxjs/add/observable/interval';
+import { SessionStorage } from 'ngx-store';
 
 import { BackendConfigurationService } from '../../../services/backend-config/backend-config.service';
+import { LockoutService } from '../../../services/lockout/lockout.service';
 import { BehaviorEngineApiService } from '../services/api.service';
 import { SkillCall } from '../models/SkillCall';
 
@@ -17,9 +19,11 @@ import { SkillCall } from '../models/SkillCall';
 })
 export class SkillerOverviewComponent implements OnInit, OnDestroy {
 
+  @ViewChild('f') form;
+
   loading = false;
   auto_refresh_subscription = null;
-  selected_skill = "active";
+  @SessionStorage() selected_skill = "active";
   skill = null;
   skills = null;
   zero_message = "No graph has been retrieved";
@@ -28,6 +32,7 @@ export class SkillerOverviewComponent implements OnInit, OnDestroy {
   private backend_subscription = null;
 
   constructor(private api_service: BehaviorEngineApiService,
+              public lockout: LockoutService,
               private backendcfg: BackendConfigurationService)
   {}
 
@@ -146,6 +151,28 @@ export class SkillerOverviewComponent implements OnInit, OnDestroy {
     this.enable_autorefresh();
   }
 
+  tooltip_skillstring()
+  {
+    if (this.lockout.enabled) {
+      return "Lockout enabled";
+    } else {
+      return null;
+    }
+  }
+
+  tooltip_exec()
+  {
+    if (this.lockout.enabled) {
+      return "Lockout enabled";
+    } else if (this.selected_skill == 'active' && this.skill && this.skill.exclusive_controller != 0) {
+      return "Exclusive controller registered";
+    } else if (!this.form.valid) {
+      return "No skill string";
+    } else {
+      return null;
+    }
+  }
+
   stop_skill()
   {
     this.api_service.stop_skill('active').subscribe(
@@ -158,7 +185,9 @@ export class SkillerOverviewComponent implements OnInit, OnDestroy {
 
   tooltip_stop()
   {
-    if (!this.skill) {
+    if (this.lockout.enabled) {
+      return "Lockout enabled";
+    } else if (!this.skill) {
       return "No skill running";
     } else {
       if (this.skill.status != 'RUNNING') {
@@ -175,7 +204,7 @@ export class SkillerOverviewComponent implements OnInit, OnDestroy {
 
   disabled_stop()
   {
-    return !this.skill || this.selected_skill != 'active' ||
+    return this.lockout.enabled || !this.skill || this.selected_skill != 'active' ||
       this.skill.status != 'RUNNING' || this.skill.exclusive_controller != 0;
   }
 
