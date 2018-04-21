@@ -562,11 +562,11 @@
   (modify ?a (status SENSED-EFFECTS-HOLD))
 )
 
-(defrule domain-effect-sensed-remove-on-failed
-  "Remove domain-pending-sensed-fact when the corresponding action is failed"
-  ?ef <- (domain-pending-sensed-fact (action-id ?action-id))
-  (plan-action (id ?action-id) (status FAILED))
-  => 
+(defrule domain-effect-sensed-remove-on-removed-action
+  "Remove domain-pending-sensed-fact when the corresponding action was removed"
+  ?ef <- (domain-pending-sensed-fact (action-id ?action-id) (goal-id ?g) (plan-id ?p))
+  (not (plan-action (id ?action-id) (plan-id ?p) (goal-id ?g)))
+  =>
   (retract ?ef)
 )
 
