@@ -137,6 +137,15 @@
   (ff-feature-request "tf")
 )
 
+(defrule executive-conditional-motor-switch-init
+  "Load motor-switch feature if required in config "
+  (executive-init)
+  (confval (path "/clips-executive/use_motor_switch") (type BOOL) (value TRUE))
+  =>
+  (printout t "Loading motor-switch feature" crlf)
+  (ff-feature-request "motor-switch")
+)
+
 (defrule executive-init-stage2
 	(executive-init)
 	(ff-feature-loaded blackboard)
@@ -181,6 +190,10 @@
   )
   (or (ff-feature-loaded tf)
       (not (confval (path "/clips-executive/use_tf")
+            (type BOOL) (value TRUE)))
+  )
+  (or (ff-feature-loaded motor-switch)
+      (not (confval (path "/clips-executive/use_motor_switch")
             (type BOOL) (value TRUE)))
   )
   (or (path-info (file "robot-memory-sync.clp") (loaded TRUE))
