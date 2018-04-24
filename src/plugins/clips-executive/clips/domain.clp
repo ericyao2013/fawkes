@@ -220,6 +220,7 @@
 (defrule domain-ground-action-precondition
   "Ground a non-atomic precondition. Grounding here merely means that we
    duplicate the precondition and tie it to one specific action-id."
+  (declare (salience ?*SALIENCE-DOMAIN-GROUND*))
   (plan-action (action-name ?op) (goal-id ?g) (plan-id ?p) (id ?action-id)
     (status FORMULATED|PENDING|WAITING))
   ?precond <- (domain-precondition
@@ -237,6 +238,7 @@
 (defrule domain-ground-effect-precondition
   "Ground a non-atomic precondition. Grounding here merely means that we
    duplicate the precondition and tie it to one specific effect-id."
+  (declare (salience ?*SALIENCE-DOMAIN-GROUND*))
   (plan-action (action-name ?op) (id ?action-id) (goal-id ?g) (plan-id ?p)
     (status EXECUTION-SUCCEEDED))
   (domain-effect (name ?effect-name) (part-of ?op))
@@ -254,6 +256,7 @@
 (defrule domain-ground-nested-precondition
   "Ground a non-atomic precondition that is part of another precondition. Copy
    the action ID from the parent precondition."
+  (declare (salience ?*SALIENCE-DOMAIN-GROUND*))
   ?precond <- (domain-precondition
                 (name ?precond-name)
                 (part-of ?parent)
@@ -273,6 +276,7 @@
 
 (defrule domain-ground-atomic-precondition
   "Ground an atomic precondition of an operator."
+  (declare (salience ?*SALIENCE-DOMAIN-GROUND*))
   (plan-action
     (status FORMULATED|PENDING|WAITING)
     (action-name ?op)
@@ -333,6 +337,7 @@
 )
 
 (defrule domain-check-if-atomic-precondition-is-satisfied
+  (declare (salience ?*SALIENCE-DOMAIN-CHECK*))
   ?precond <- (domain-atomic-precondition
                 (goal-id ?g) (plan-id ?p)
                 (is-satisfied FALSE)
@@ -345,6 +350,7 @@
 )
 
 (defrule domain-retract-atomic-precondition-if-not-satisfied
+  (declare (salience ?*SALIENCE-DOMAIN-CHECK*))
   ?precond <- (domain-atomic-precondition
                 (goal-id ?g) (plan-id ?p)
                 (is-satisfied TRUE)
@@ -360,6 +366,7 @@
   "A negative precondition is satisfied iff its (only) child is not satisfied.
    Note that we need a second rule that retracts the fact if the child is
    asserted."
+  (declare (salience ?*SALIENCE-DOMAIN-CHECK*))
   ?precond <- (domain-precondition
                 (type negation)
                 (grounded TRUE)
@@ -386,6 +393,7 @@
 (defrule domain-retract-negative-precondition-if-child-is-satisfied
   "If a negative precondition's child is satisfied, the precondition is not
    satisfied anymore."
+  (declare (salience ?*SALIENCE-DOMAIN-CHECK*))
   ?precond <- (domain-precondition
                 (type negation)
                 (name ?pn)
@@ -411,6 +419,7 @@
 
 (defrule domain-check-if-conjunctive-precondition-is-satisfied
   "All the precondition's children must be satisfied."
+  (declare (salience ?*SALIENCE-DOMAIN-CHECK*))
   ?precond <- (domain-precondition
                 (name ?pn)
                 (type conjunction)
@@ -434,6 +443,7 @@
 (defrule domain-retract-conjunctive-precondition-if-child-is-not-satisfied
   "Make sure that a conjunctive precondition is not satisfied if any of its
    children is satisfied."
+  (declare (salience ?*SALIENCE-DOMAIN-CHECK*))
   ?precond <- (domain-precondition
                 (name ?pn)
                 (type conjunction)
@@ -481,6 +491,7 @@
 ; TODO: ?action-name should be ?op
 (defrule domain-effects-check-for-sensed
   "Apply effects of an action after it succeeded."
+  (declare (salience ?*SALIENCE-DOMAIN-APPLY*))
   ?pa <- (plan-action	(id ?id) (goal-id ?g) (plan-id ?p) (action-name ?op)
                       (status EXECUTION-SUCCEEDED)
 											(param-names $?action-param-names)
@@ -511,6 +522,7 @@
 
 (defrule domain-effects-ignore-sensed
   "Apply effects of an action after it succeeded."
+  (declare (salience ?*SALIENCE-DOMAIN-APPLY*))
   ?pa <- (plan-action	(id ?id) (action-name ?op) (status EXECUTION-SUCCEEDED))
 	(domain-operator (name ?op) (wait-sensed FALSE))
 	=>
@@ -520,6 +532,7 @@
 ; Atomically assert all effects of an action after it has been executed.
 (defrule domain-effects-apply
   "Apply effects of an action after it succeeded."
+  (declare (salience ?*SALIENCE-DOMAIN-APPLY*))
   ?pa <- (plan-action	(id ?id) (goal-id ?g) (plan-id ?p) (action-name ?op)
                       (status SENSED-EFFECTS-HOLD)
 											(param-names $?action-param-names)
@@ -557,6 +570,7 @@
 
 (defrule domain-effect-sensed-positive-holds
   "Remove a pending sensed positive fact that has been sensed."
+  (declare (salience ?*SALIENCE-DOMAIN-APPLY*))
   ?ef <- (domain-pending-sensed-fact (type POSITIVE)
           (name ?predicate) (param-values $?values))
   ?df <- (domain-fact (name ?predicate) (param-values $?values))
@@ -566,6 +580,7 @@
 
 (defrule domain-effect-sensed-negative-holds
   "Remove a pending sensed negative fact that has been sensed."
+  (declare (salience ?*SALIENCE-DOMAIN-APPLY*))
   ?ef <- (domain-pending-sensed-fact (type NEGATIVE)
           (name ?predicate) (param-values $?values))
   (not (domain-fact (name ?predicate) (param-values $?values)))
@@ -575,6 +590,7 @@
 
 (defrule domain-effect-wait-sensed-done
   "After the effects of an action have been applied, change it to SENSED-EFFECTS-HOLD."
+  (declare (salience ?*SALIENCE-DOMAIN-APPLY*))
   ?a <- (plan-action (id ?action-id) (status SENSED-EFFECTS-WAIT))
   (not (domain-pending-sensed-fact (action-id ?action-id)))
   =>
@@ -583,6 +599,7 @@
 
 (defrule domain-action-final
   "After the effects of an action have been applied, change it to FINAL."
+  (declare (salience ?*SALIENCE-DOMAIN-APPLY*))
   ?a <- (plan-action (id ?action-id) (status EFFECTS-APPLIED))
   =>
   (modify ?a (status FINAL))
@@ -596,6 +613,7 @@
 ; period).
 (defrule domain-action-failed
   "An action has failed."
+  (declare (salience ?*SALIENCE-DOMAIN-APPLY*))
   ?a <- (plan-action (id ?action-id) (status EXECUTION-FAILED))
   =>
   (modify ?a (status FAILED))
@@ -604,6 +622,7 @@
 
 (defrule domain-check-if-action-is-executable
   "If the precondition of an action is satisfied, the action is executable."
+  (declare (salience ?*SALIENCE-DOMAIN-CHECK*))
   ?action <- (plan-action (id ?action-id) (goal-id ?g) (plan-id ?p)
                           (executable FALSE))
   (domain-precondition (plan-id ?p) (goal-id ?g) (grounded-with ?action-id)
@@ -614,6 +633,7 @@
 
 (defrule domain-check-if-action-is-executable-without-precondition
   "If the precondition of an action is satisfied, the action is executable."
+  (declare (salience ?*SALIENCE-DOMAIN-CHECK*))
   ?action <- (plan-action (id ?action-id) (action-name ?action-name) (executable FALSE))
   (not (domain-precondition (part-of ?action-name)))
 =>
