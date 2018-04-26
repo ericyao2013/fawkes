@@ -466,7 +466,7 @@
                       (status EXECUTION-SUCCEEDED)
 											(param-names $?action-param-names)
                       (param-values $?action-param-values))
-	(domain-operator (name ?op) (wait-sensed TRUE))
+	(domain-operator (name ?op))
 	=>
 	(bind ?next-state SENSED-EFFECTS-HOLD)
 	(do-for-all-facts ((?e domain-effect) (?pred domain-predicate))
@@ -491,8 +491,8 @@
 )
 
 (defrule domain-effects-ignore-sensed
-  "Apply effects of an action after it succeeded."
-  ?pa <- (plan-action	(id ?id) (action-name ?op) (status EXECUTION-SUCCEEDED))
+  "Do not wait for sensed effects if the operator is not a waiting operator."
+  ?pa <- (plan-action	(id ?id) (action-name ?op) (status SENSED-EFFECTS-WAIT))
 	(domain-operator (name ?op) (wait-sensed FALSE))
 	=>
 	(modify ?pa (status SENSED-EFFECTS-HOLD))
