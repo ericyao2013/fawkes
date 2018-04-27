@@ -103,7 +103,7 @@
 (defrule skill-action-retract-execinfo-without-action
 	?pe <- (skill-action-execinfo (goal-id ?goal-id) (plan-id ?plan-id)
 																(action-id ?id) (skill-id ?skill-id))
-  (not (skill (status S_RUNNING) (skill-id ?skill-id)))
+  (not (skill (status S_RUNNING) (id ?skill-id)))
   (not (plan-action (goal-id ?goal-id) (plan-id ?plan-id) (id ?action-id)))
   =>
   (retract ?pe)
