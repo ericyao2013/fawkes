@@ -715,8 +715,8 @@
 )
 
 (defrule domain-effects-ignore-sensed
-  (declare (salience ?*SALIENCE-DOMAIN-APPLY*))
   "Do not wait for sensed effects if the operator is not a waiting operator."
+  (declare (salience ?*SALIENCE-DOMAIN-APPLY*))
   ?pa <- (plan-action	(id ?id) (action-name ?op) (status SENSED-EFFECTS-WAIT))
 	(domain-operator (name ?op) (wait-sensed FALSE))
 	=>
