@@ -292,6 +292,35 @@ PluginManager::parse_plugin_list(const char *plugin_list)
 }
 
 
+/**
+ * @brief PluginManager::concat_strings Utility method to make a "bla,bli,blub" string
+ * @param string Vector of strings to concatenate
+ * @param separator Separator to put in between
+ * @return string concatenated by separator
+ */
+std::string
+PluginManager::concat_strings(const std::list<std::string> &strings, const std::string &separator) const
+{
+  std::string rv;
+  for (const std::string &s : strings)
+    rv += s + separator;
+  rv = rv.substr(0, rv.length() - separator.length());
+  return rv;
+}
+
+
+/** Load plugin.
+ * The loading is interrupted if any of the plugins does not load properly.
+ * The already loaded plugins are *not* unloaded, but kept.
+ * @param plugin_list list of plugin names to load. The plugin list can contain meta plugins.
+ */
+void
+PluginManager::load(const char *plugin_list)
+{
+  load(parse_plugin_list(plugin_list));
+}
+
+
 /** Load plugin.
  * The loading is interrupted if any of the plugins does not load properly.
  * The already loaded plugins are *not* unloaded, but kept.
@@ -299,20 +328,23 @@ PluginManager::parse_plugin_list(const char *plugin_list)
  * to load. The plugin list can contain meta plugins.
  */
 void
-PluginManager::load(const char *plugin_list)
+PluginManager::load(const std::list<std::string> &pp)
 {
-	std::list<std::string> pp = parse_plugin_list(plugin_list);
-
-	for (std::list<std::string>::iterator i = pp.begin(); i != pp.end(); ++i) {
+	for (std::list<std::string>::const_iterator i = pp.begin(); i != pp.end(); ++i) {
 		if ( i->length() == 0 ) continue;
 
 		bool try_real_plugin = true;
 		if ( __meta_plugins.find(*i) == __meta_plugins.end() ) {
 			std::string meta_plugin = __meta_plugin_prefix + *i;
 			bool found_meta = false;
-			std::string pset = "";
+			std::list<std::string> pset;
 			try {
-				pset = __config->get_string(meta_plugin.c_str());
+				if (__config->is_list(meta_plugin.c_str())) {
+					std::vector<std::string> tmp = __config->get_strings(meta_plugin.c_str());
+					pset.insert(pset.end(), tmp.begin(), tmp.end());
+				}
+				else
+					pset = parse_plugin_list(__config->get_string(meta_plugin.c_str()).c_str());
 				found_meta = true;
 			} catch (ConfigEntryNotFoundException &e) {
 				// no meta plugin defined by that name
@@ -321,7 +353,7 @@ PluginManager::load(const char *plugin_list)
 			}
 
 			if (found_meta) {
-				if (pset.length() == 0) {
+				if (pset.size() == 0) {
 					throw Exception("Refusing to load an empty meta plugin");
 				}
 				//printf("Going to load meta plugin %s (%s)\n", i->c_str(), pset.c_str());
@@ -332,8 +364,9 @@ PluginManager::load(const char *plugin_list)
 				__meta_plugins.unlock();
 				try {
 					LibLogger::log_info("PluginManager", "Loading plugins %s for meta plugin %s",
-					                    pset.c_str(), i->c_str());
-					load(pset.c_str());
+                              concat_strings(pset, ",").c_str(), i->c_str());
+					load(pset);
+					LibLogger::log_debug("PluginManager", "Loaded meta plugin %s", i->c_str());
 					notify_loaded(i->c_str());
 				} catch (Exception &e) {
 					e.append("Could not initialize meta plugin %s, aborting loading.", i->c_str());
@@ -399,7 +432,7 @@ PluginManager::unload(const char *plugin_name)
       __meta_plugins.lock();
       __mpit = __meta_plugins.begin();
       while (__mpit != __meta_plugins.end()) {
-	std::list<std::string> pp = parse_plugin_list(__mpit->second.c_str());
+	std::list<std::string> pp = __mpit->second;
 
 	bool erase = false;
 	for (std::list<std::string>::iterator i = pp.begin(); i != pp.end(); ++i) {
@@ -409,7 +442,7 @@ PluginManager::unload(const char *plugin_name)
 	  }
 	}
 	if ( erase ) {
-	  LockMap< std::string, std::string >::iterator tmp = __mpit;
+	  LockMap< std::string, std::list<std::string> >::iterator tmp = __mpit;
 	  ++__mpit;
 	  notify_unloaded(tmp->first.c_str());
 	  __meta_plugins.erase(tmp);
@@ -424,7 +457,7 @@ PluginManager::unload(const char *plugin_name)
       throw;
     }
   } else if (__meta_plugins.find(plugin_name) != __meta_plugins.end()) {
-    std::list<std::string> pp = parse_plugin_list(__meta_plugins[plugin_name].c_str());
+    std::list<std::string> pp = __meta_plugins[plugin_name];
 
     for (std::list<std::string>::reverse_iterator i = pp.rbegin(); i != pp.rend(); ++i) {
       if ( i->length() == 0 ) continue;
@@ -435,7 +468,7 @@ PluginManager::unload(const char *plugin_name)
 
       __meta_plugins.erase_locked(*i);
       LibLogger::log_info("PluginManager", "UNloading plugin %s for meta plugin %s",
-			  i->c_str(), plugin_name);
+        i->c_str(), plugin_name);
       unload(i->c_str());
     }
   }
