@@ -20,7 +20,7 @@
 #include <cstdint>
 #include <vector>
 #include <memory>
-#include <optional>
+#include <utils/misc/cpp17_compat.h>
 
 #include "Service.h"
 
